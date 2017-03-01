@@ -4,16 +4,29 @@ using System.Linq;
 using System.Text;
 using System.Diagnostics;
 
+using Terraria;
+using TerrariaApi.Server;
+using TShockAPI;
+using TShockAPI.DB;
+using TShockAPI.Hooks;
+
 namespace CGGCTF
 {
     public class CTFController
     {
         Random rng;
+        CTFCallback cb;
+
         Dictionary<int, CTFPlayer> players;
         public CTFPhase gamePhase { get; private set; }
         public bool gameIsRunning {
             get {
                 return gamePhase != CTFPhase.Lobby && gamePhase != CTFPhase.Ended;
+            }
+        }
+        public bool isPvPPhase {
+            get {
+                return gamePhase == CTFPhase.Combat;
             }
         }
 
@@ -38,10 +51,11 @@ namespace CGGCTF
         public int redScore { get; private set; } = 0;
         public int blueScore { get; private set; } = 0;
 
-        public CTFController()
+        public CTFController(CTFCallback cb)
         {
             rng = new Random();
             players = new Dictionary<int, CTFPlayer>();
+            this.cb = cb;
         }
 
         #region Helper functions
@@ -78,6 +92,7 @@ namespace CGGCTF
         {
             assignTeam(id);
             setTeam(id);
+            setPvP(id);
             tellPlayerTeam(id);
             if (!players[id].PickedClass)
                 tellPlayerSelectClass(id);
@@ -193,6 +208,7 @@ namespace CGGCTF
             foreach (var id in players.Keys) {
                 var player = players[id];
                 warpToSpawn(id);
+                setPvP(id);
             }
         }
 
@@ -218,82 +234,102 @@ namespace CGGCTF
 
         void setTeam(int id)
         {
-            
+            Debug.Assert(playerExists(id));
+            cb.setTeam(id, players[id].Team);
+        }
+
+        void setPvP(int id)
+        {
+            Debug.Assert(playerExists(id));
+            cb.setPvP(id, isPvPPhase);
         }
 
         void setInventory(int id)
         {
-
+            Debug.Assert(playerExists(id));
+            cb.setInventory(id, players[id].Inventory);
         }
 
         void saveInventory(int id)
         {
-
+            Debug.Assert(playerExists(id));
+            PlayerData toSave = cb.saveInventory(id);
+            players[id].Inventory = toSave;
         }
 
         void warpToSpawn(int id)
         {
-
+            Debug.Assert(playerExists(id));
+            cb.warpToSpawn(id, players[id].Team);
         }
 
         void informPlayerJoin(int id)
         {
-
+            Debug.Assert(playerExists(id));
+            cb.informPlayerJoin(id, players[id].Team);
         }
 
         void informPlayerRejoin(int id)
         {
-
+            Debug.Assert(playerExists(id));
+            cb.informPlayerRejoin(id, players[id].Team);
         }
 
         void informPlayerLeave(int id)
         {
-
+            Debug.Assert(playerExists(id));
+            cb.informPlayerLeave(id, players[id].Team);
         }
 
         void announceGetFlag(int id)
         {
-
+            Debug.Assert(playerExists(id));
+            cb.announceGetFlag(id, players[id].Team);
         }
 
         void announceCaptureFlag(int id)
         {
-
+            Debug.Assert(playerExists(id));
+            cb.announceCaptureFlag(id, players[id].Team, redScore, blueScore);
         }
 
         void announceFlagDrop(int id)
         {
-
+            Debug.Assert(playerExists(id));
+            cb.announceFlagDrop(id, players[id].Team);
         }
 
         void announceGameStart()
         {
-
+            cb.announceGameStart();
         }
 
         void announceCombatStart()
         {
-
+            cb.announceCombatStart();
         }
 
         void announceGameEnd(CTFTeam winner)
         {
-
+            cb.announceGameEnd(winner, redScore, blueScore);
         }
 
         void tellPlayerTeam(int id)
         {
-
+            Debug.Assert(playerExists(id));
+            cb.tellPlayerTeam(id, players[id].Team);
         }
 
         void tellPlayerSelectClass(int id)
         {
-
+            Debug.Assert(playerExists(id));
+            cb.tellPlayerSelectClass(id);
         }
 
         void tellPlayerCurrentClass(int id)
         {
-
+            Debug.Assert(playerExists(id));
+            cb.tellPlayerCurrentClass(id, players[id].Class);
         }
 
         #endregion

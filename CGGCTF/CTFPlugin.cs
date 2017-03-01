@@ -23,7 +23,7 @@ namespace CGGCTF
         public override Version Version { get { return Assembly.GetExecutingAssembly().GetName().Version; } }
         public CTFPlugin(Main game) : base(game) { }
 
-        CTFController ctf = new CTFController();
+        CTFController ctf;
         TeamColor[] playerColor = new TeamColor[256];
         bool[] playerPvP = new bool[256];
         PlayerData[] originalChar = new PlayerData[256];
@@ -57,6 +57,10 @@ namespace CGGCTF
 
         void onInitialize(EventArgs args)
         {
+            // callbacks
+            CTFCallback cb = new CTFCallback();
+            ctf = new CTFController(cb);
+
             // commands
         }
 
