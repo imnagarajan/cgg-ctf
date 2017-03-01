@@ -58,6 +58,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CTFCallback.cs" />
     <Compile Include="CTFPlayer.cs" />
     <Compile Include="CTFPlugin.cs" />
     <Compile Include="CTFController.cs" />
