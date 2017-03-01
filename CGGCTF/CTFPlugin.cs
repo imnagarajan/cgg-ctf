@@ -133,10 +133,10 @@ namespace CGGCTF
                 var tplr = TShock.Players[revID[id]];
                 // TODO - add crown to head
                 if (team == CTFTeam.Red) {
-                    // TODO - remove blue flag
+                    removeBlueFlag();
                     announceRedMessage("{0} is taking blue team's flag!", tplr.Name);
                 } else {
-                    // TODO - remove red flag
+                    removeRedFlag();
                     announceBlueMessage("{0} is taking red team's flag!", tplr.Name);
                 }
             };
@@ -145,10 +145,10 @@ namespace CGGCTF
                 var tplr = TShock.Players[revID[id]];
                 // TODO - remove crown from head
                 if (team == CTFTeam.Red) {
-                    // TODO - add blue flag
+                    addBlueFlag();
                     announceRedMessage("{0} captured blue team's flag and scored a point!", tplr.Name);
                 } else {
-                    // TODO - add red flag
+                    addRedFlag();
                     announceRedMessage("{0} captured red team's flag and scored a point!", tplr.Name);
                 }
                 announceScore(redScore, blueScore);
@@ -158,10 +158,10 @@ namespace CGGCTF
                 var tplr = TShock.Players[revID[id]];
                 // TODO - remove crown from head
                 if (team == CTFTeam.Red) {
-                    // TODO - add blue flag
+                    addBlueFlag();
                     announceRedMessage("{0} dropped blue team's flag.", tplr.Name);
                 } else {
-                    // TODO - add red flag
+                    addRedFlag();
                     announceBlueMessage("{0} dropped red team's flag.", tplr.Name);
                 }
             };
@@ -441,7 +441,7 @@ namespace CGGCTF
             return x < 0 || y < 0 || x >= Main.maxTilesX || y >= Main.maxTilesY || (Main.tile[x, y].active() && Main.tileSolid[Main.tile[x, y].type]);
         }
 
-        void setTile(int i, int j, int tileType)
+        void setTile(int i, int j, int tileType, int style = 0)
         {
             var tile = Main.tile[i, j];
             switch (tileType) {
@@ -473,7 +473,7 @@ namespace CGGCTF
                     return;
                 default:
                     if (Main.tileFrameImportant[tileType])
-                        WorldGen.PlaceTile(i, j, tileType);
+                        WorldGen.PlaceTile(i, j, tileType, false, false, -1, style);
                     else {
                         tile.active(true);
                         tile.frameX = -1;
@@ -526,7 +526,7 @@ namespace CGGCTF
 
         void decidePositions()
         {
-            int flagDistance = 225;
+            int flagDistance = 175;
             int spawnDistance = 300;
 
             int middle = Main.maxTilesX / 2;
@@ -566,13 +566,13 @@ namespace CGGCTF
 
         void addMiddleBlock()
         {
-            realTiles = new Tile[width * 2, Main.maxTilesY];
+            realTiles = new Tile[width * 2 + 1, Main.maxTilesY];
 
             int middle = Main.maxTilesX / 2;
             int leftwall = middle - width;
             int rightwall = middle + width;
 
-            for (int x = 0; x < 2 * width; ++x) {
+            for (int x = 0; x <= 2 * width; ++x) {
                 for (int y = 0; y < Main.maxTilesY; ++y) {
                     realTiles[x, y] = new Tile(Main.tile[leftwall + x, y]);
                     setTile(leftwall + x, y, Terraria.ID.TileID.LihzahrdBrick);
@@ -588,7 +588,7 @@ namespace CGGCTF
             int leftwall = middle - width;
             int rightwall = middle + width;
 
-            for (int x = 0; x < 2 * width; ++x) {
+            for (int x = 0; x <= 2 * width; ++x) {
                 for (int y = 0; y < Main.maxTilesY; ++y) {
                     Main.tile[leftwall + x, y] = realTiles[x, y];
                 }
@@ -682,8 +682,66 @@ namespace CGGCTF
 
         void addFlags()
         {
-
+            addRedFlag(true);
+            addBlueFlag(true);
         }
+
+        void addRedFlag(bool full = false)
+        {
+            ushort flagTile = Terraria.ID.TileID.Banners;
+            ushort redTile = Terraria.ID.TileID.RedBrick;
+
+            if (full) {
+                for (int i = -3; i <= 3; ++i) {
+                    for (int j = -6; j <= 1; ++j)
+                        setTile(redFlag.X + i, redFlag.Y + j, -1);
+                }
+            }
+            for (int i = -1; i <= 1; ++i) {
+                setTile(redFlag.X + i, redFlag.Y, redTile);
+                setTile(redFlag.X + i, redFlag.Y - 5, redTile);
+                setTile(redFlag.X + i, redFlag.Y - 4, flagTile, 0);
+            }
+            resetSection(redFlag.X - 3, redFlag.X + 3, redFlag.Y - 6, redFlag.Y + 1);
+        }
+
+        void addBlueFlag(bool full = false)
+        {
+            ushort flagTile = Terraria.ID.TileID.Banners;
+            ushort blueTile = Terraria.ID.TileID.CobaltBrick;
+
+            if (full) {
+                for (int i = -3; i <= 3; ++i) {
+                    for (int j = -6; j <= 1; ++j)
+                        setTile(blueFlag.X + i, blueFlag.Y + j, -1);
+                }
+            }
+            for (int i = -1; i <= 1; ++i) {
+                setTile(blueFlag.X + i, blueFlag.Y, blueTile);
+                setTile(blueFlag.X + i, blueFlag.Y - 5, blueTile);
+                setTile(blueFlag.X + i, blueFlag.Y - 4, flagTile, 2);
+            }
+            resetSection(blueFlag.X - 3, blueFlag.X + 3, blueFlag.Y - 6, blueFlag.Y + 1);
+        }
+
+        void removeRedFlag()
+        {
+            for (int i = -1; i <= 1; ++i) {
+                for (int j = 4; j >= 2; --j)
+                    setTile(redFlag.X + i, redFlag.Y - j, -1);
+            }
+            resetSection(redFlag.X - 3, redFlag.X + 3, redFlag.Y - 6, redFlag.Y + 1);
+        }
+
+        void removeBlueFlag()
+        {
+            for (int i = -1; i <= 1; ++i) {
+                for (int j = 4; j >= 2; --j)
+                    setTile(blueFlag.X + i, blueFlag.Y - j, -1);
+            }
+            resetSection(blueFlag.X - 3, blueFlag.X + 3, blueFlag.Y - 6, blueFlag.Y + 1);
+        }
+
         #endregion
     }
 }
