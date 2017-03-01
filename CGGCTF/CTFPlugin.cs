@@ -75,19 +75,25 @@ namespace CGGCTF
                 setPvP(revID[id], pvp);
             };
             cb.setInventory = delegate (int id, PlayerData inventory) {
-                // TODO
-                throw new NotImplementedException();
+                if (inventory == null)
+                    return;
+                var tplr = TShock.Players[revID[id]];
+                inventory.RestoreCharacter(tplr);
             };
             cb.saveInventory = delegate (int id) {
-                // TODO
-                throw new NotImplementedException();
+                var tplr = TShock.Players[revID[id]];
+                PlayerData data = new PlayerData(tplr);
+                data.CopyCharacter(tplr);
+                return data;
             };
             cb.warpToSpawn = delegate (int id, CTFTeam team) {
                 var tplr = TShock.Players[revID[id]];
                 if (team == CTFTeam.Red)
-                    tplr.Teleport(redSpawn.X, redSpawn.Y);
+                    tplr.SendWarningMessage("Debug: Warped to red spawn.");
+                    //tplr.Teleport(redSpawn.X, redSpawn.Y);
                 else if (team == CTFTeam.Blue)
-                    tplr.Teleport(blueSpawn.X, blueSpawn.Y);
+                    tplr.SendWarningMessage("Debug: Warped to blue spawn.");
+                    //tplr.Teleport(blueSpawn.X, blueSpawn.Y);
             };
             cb.informPlayerJoin = delegate (int id, CTFTeam team) {
                 var tplr = TShock.Players[revID[id]];
@@ -180,7 +186,7 @@ namespace CGGCTF
             };
             cb.tellPlayerSelectClass = delegate (int id) {
                 var tplr = TShock.Players[revID[id]];
-                tplr.SendInfoMessage("Select your class with {0}class.");
+                tplr.SendInfoMessage("Select your class with {0}class.", Commands.Specifier);
             };
             cb.tellPlayerCurrentClass = delegate (int id, int cls) {
                 var tplr = TShock.Players[revID[id]];
@@ -191,6 +197,10 @@ namespace CGGCTF
             ctf = new CTFController(cb);
 
             // commands
+
+            Commands.ChatCommands.Add(new Command("ctf.play", cmdJoin, "join"));
+            Commands.ChatCommands.Add(new Command("ctf.play", cmdClass, "class"));
+            Commands.ChatCommands.Add(new Command("ctf.skip", cmdSkip, "skip"));
         }
 
         #endregion
@@ -211,9 +221,10 @@ namespace CGGCTF
 
             revID[id] = ix;
 
-            originalChar[tplr.Index] = new PlayerData(tplr);
-            originalChar[tplr.Index].CopyCharacter(tplr);
+            originalChar[ix] = new PlayerData(tplr);
+            originalChar[ix].CopyCharacter(tplr);
 
+            // TODO - make joining player sees the message
             if (ctf.playerExists(id))
                 ctf.rejoinGame(id);
         }
@@ -224,7 +235,12 @@ namespace CGGCTF
             var ix = tplr.Index;
             var id = tplr.User.ID;
 
-            ctf.leaveGame(id);
+            if (ctf.playerExists(id))
+                ctf.leaveGame(id);
+
+            tplr.PlayerData = originalChar[ix];
+            TShock.CharacterDB.InsertPlayerData(tplr);
+
             tplr.IsLoggedIn = false;
         }
 
@@ -237,6 +253,38 @@ namespace CGGCTF
         }
 
         #endregion
+
+        #region Commands
+
+        void cmdJoin(CommandArgs args)
+        {
+            var tplr = args.Player;
+            var ix = tplr.Index;
+            var id = tplr.User.ID;
+
+            if (ctf.playerExists(id))
+                tplr.SendErrorMessage("You are already in the game.");
+            else
+                ctf.joinGame(id);
+        }
+
+        void cmdClass(CommandArgs args)
+        {
+            
+        }
+
+        void cmdSkip(CommandArgs args)
+        {
+            // TODO - do this properly with timers
+            if (ctf.gamePhase == CTFPhase.Lobby)
+                ctf.startGame();
+            else if (ctf.gamePhase == CTFPhase.Preparation)
+                ctf.startCombat();
+            else if (ctf.gamePhase == CTFPhase.Combat)
+                ctf.endGame();
+        }
+
+        #endregion 
 
         #region Team/PvP force
         void setTeam(int index, TeamColor color)

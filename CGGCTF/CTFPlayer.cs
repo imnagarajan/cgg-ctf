@@ -24,7 +24,7 @@ namespace CGGCTF
         }
         public PlayerData Inventory;
 
-        CTFPlayer()
+        public CTFPlayer()
         {
             Team = CTFTeam.None;
             Class = -1;

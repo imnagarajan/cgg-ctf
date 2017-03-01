@@ -108,6 +108,7 @@ namespace CGGCTF
         public void joinGame(int id)
         {
             Debug.Assert(!playerExists(id));
+            players[id] = new CTFPlayer();
             informPlayerJoin(id);
             if (gameIsRunning)
                 getPlayerStarted(id);
@@ -132,6 +133,7 @@ namespace CGGCTF
                 flagDrop(id);
                 informPlayerLeave(id);
             } else {
+                players.Remove(id);
                 --totalPlayer;
             }
             --onlinePlayer;
