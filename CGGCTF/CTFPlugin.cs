@@ -99,9 +99,9 @@ namespace CGGCTF
             cb.warpToSpawn = delegate (int id, CTFTeam team) {
                 var tplr = TShock.Players[revID[id]];
                 if (team == CTFTeam.Red)
-                    tplr.Teleport(redSpawn.X * 16, redSpawn.Y * 16);
+                    tplr.Teleport(redSpawn.X * 16, (redSpawn.Y - 3) * 16);
                 else if (team == CTFTeam.Blue)
-                    tplr.Teleport(blueSpawn.X * 16, blueSpawn.Y * 16);
+                    tplr.Teleport(blueSpawn.X * 16, (blueSpawn.Y - 3) * 16);
             };
             cb.informPlayerJoin = delegate (int id, CTFTeam team) {
                 var tplr = TShock.Players[revID[id]];
@@ -167,7 +167,8 @@ namespace CGGCTF
             };
             cb.announceGameStart = delegate () {
                 announceMessage("The game has started! You have 5 minutes to prepare your base!");
-                addSpawnAndFlag();
+                addSpawns();
+                addFlags();
                 addMiddleBlock();
                 // TODO - timer
             };
@@ -416,6 +417,58 @@ namespace CGGCTF
             return x < 0 || y < 0 || x >= Main.maxTilesX || y >= Main.maxTilesY || (Main.tile[x, y].active() && Main.tileSolid[Main.tile[x, y].type]);
         }
 
+        void setTile(int i, int j, int tileType)
+        {
+            var tile = Main.tile[i, j];
+            switch (tileType) {
+                case -1:
+                    tile.active(false);
+                    tile.frameX = -1;
+                    tile.frameY = -1;
+                    tile.liquidType(0);
+                    tile.liquid = 0;
+                    tile.type = 0;
+                    return;
+                case -2:
+                    tile.active(false);
+                    tile.liquidType(1);
+                    tile.liquid = 255;
+                    tile.type = 0;
+                    return;
+                case -3:
+                    tile.active(false);
+                    tile.liquidType(2);
+                    tile.liquid = 255;
+                    tile.type = 0;
+                    return;
+                case -4:
+                    tile.active(false);
+                    tile.liquidType(0);
+                    tile.liquid = 255;
+                    tile.type = 0;
+                    return;
+                default:
+                    if (Main.tileFrameImportant[tileType])
+                        WorldGen.PlaceTile(i, j, tileType);
+                    else {
+                        tile.active(true);
+                        tile.frameX = -1;
+                        tile.frameY = -1;
+                        tile.liquidType(0);
+                        tile.liquid = 0;
+                        tile.slope(0);
+                        tile.color(0);
+                        tile.type = (ushort)tileType;
+                    }
+                    return;
+            }
+        }
+
+        void setWall(int i, int j, int wallType)
+        {
+            Main.tile[i, j].wall = (byte)wallType;
+        }
+
         void resetSection(int x, int x2, int y, int y2)
         {
             int lowX = Netplay.GetSectionX(x);
@@ -429,6 +482,8 @@ namespace CGGCTF
                 }
             }
         }
+
+        // actual mine
 
         int findGround(int x)
         {
@@ -453,16 +508,16 @@ namespace CGGCTF
             int middle = Main.maxTilesX / 2;
 
             int f1x = middle - flagDistance;
-            int f1y = findGround(f1x);
+            int f1y = findGround(f1x) - 2;
 
             int f2x = middle + flagDistance;
-            int f2y = findGround(f2x);
+            int f2y = findGround(f2x) - 2;
 
             int s1x = middle - spawnDistance;
-            int s1y = findGround(s1x);
+            int s1y = findGround(s1x) - 5;
 
             int s2x = middle + spawnDistance;
-            int s2y = findGround(s2x);
+            int s2y = findGround(s2x) - 5;
 
             if (rng.Next(2) == 0) {
                 redFlag.X = f1x;
@@ -496,15 +551,7 @@ namespace CGGCTF
             for (int x = 0; x < 2 * width; ++x) {
                 for (int y = 0; y < Main.maxTilesY; ++y) {
                     realTiles[x, y] = new Tile(Main.tile[leftwall + x, y]);
-                    var fakeTile = new Tile();
-                    fakeTile.active(true);
-                    fakeTile.frameX = -1;
-                    fakeTile.frameY = -1;
-                    fakeTile.liquidType(0);
-                    fakeTile.liquid = 0;
-                    fakeTile.slope(0);
-                    fakeTile.type = Terraria.ID.TileID.LihzahrdBrick;
-                    Main.tile[leftwall + x, y] = fakeTile;
+                    setTile(leftwall + x, y, Terraria.ID.TileID.LihzahrdBrick);
                 }
             }
 
@@ -527,7 +574,89 @@ namespace CGGCTF
             realTiles = null;
         }
 
-        void addSpawnAndFlag()
+        void addSpawns()
+        {
+            addLeftSpawn();
+            addRightSpawn();
+        }
+
+        void addLeftSpawn()
+        {
+            Point leftSpawn;
+            ushort tileID;
+            ushort wallID;
+
+            if (redSpawn.X < blueSpawn.X) {
+                leftSpawn = redSpawn;
+                tileID = Terraria.ID.TileID.RedBrick;
+                wallID = Terraria.ID.WallID.RedBrick;
+            } else {
+                leftSpawn = blueSpawn;
+                tileID = Terraria.ID.TileID.CobaltBrick;
+                wallID = Terraria.ID.WallID.CobaltBrick;
+            }
+
+            for (int i = -6; i <= 7; ++i) {
+                for (int j = -9; j <= 2; ++j) {
+                    setTile(leftSpawn.X + i, leftSpawn.Y + j, -1);
+                    setWall(leftSpawn.X + i, leftSpawn.Y + j, 0);
+                }
+            }
+            for (int i = -5; i <= 6; ++i)
+                setTile(leftSpawn.X + i, leftSpawn.Y + 1, tileID);
+            for (int i = -4; i <= 5; ++i)
+                setWall(leftSpawn.X + i, leftSpawn.Y - 5, wallID);
+            for (int i = 1; i <= 3; ++i) {
+                for (int j = 0; j < i; ++j)
+                    setWall(leftSpawn.X + 2 + j, leftSpawn.Y - 9 + i, wallID);
+            }
+            for (int i = 3; i >= 1; --i) {
+                for (int j = 0; j < i; ++j)
+                    setWall(leftSpawn.X + 2 + j, leftSpawn.Y - 1 - i, wallID);
+            }
+
+            resetSection(leftSpawn.X - 6, leftSpawn.X + 7, leftSpawn.Y - 9, leftSpawn.Y + 2);
+        }
+
+        void addRightSpawn()
+        {
+            Point rightSpawn;
+            ushort tileID;
+            ushort wallID;
+
+            if (redSpawn.X < blueSpawn.X) {
+                rightSpawn = blueSpawn;
+                tileID = Terraria.ID.TileID.CobaltBrick;
+                wallID = Terraria.ID.WallID.CobaltBrick;
+            } else {
+                rightSpawn = redSpawn;
+                tileID = Terraria.ID.TileID.RedBrick;
+                wallID = Terraria.ID.WallID.RedBrick;
+            }
+
+            for (int i = -7; i <= 6; ++i) {
+                for (int j = -9; j <= 2; ++j) {
+                    setTile(rightSpawn.X + i, rightSpawn.Y + j, -1);
+                    setWall(rightSpawn.X + i, rightSpawn.Y + j, 0);
+                }
+            }
+            for (int i = -6; i <= 5; ++i)
+                setTile(rightSpawn.X + i, rightSpawn.Y + 1, tileID);
+            for (int i = -5; i <= 4; ++i)
+                setWall(rightSpawn.X + i, rightSpawn.Y - 5, wallID);
+            for (int i = 1; i <= 3; ++i) {
+                for (int j = 0; j < i; ++j)
+                    setWall(rightSpawn.X - 2 - j, rightSpawn.Y - 9 + i, wallID);
+            }
+            for (int i = 3; i >= 1; --i) {
+                for (int j = 0; j < i; ++j)
+                    setWall(rightSpawn.X - 2 - j, rightSpawn.Y - 1 - i, wallID);
+            }
+
+            resetSection(rightSpawn.X - 7, rightSpawn.X + 6, rightSpawn.Y - 9, rightSpawn.Y + 2);
+        }
+
+        void addFlags()
         {
 
         }
