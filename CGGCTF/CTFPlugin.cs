@@ -215,10 +215,14 @@ namespace CGGCTF
                 blankClass.Inventory[i] = new NetItem(0, 0, 0);
 
             // commands
-
-            Commands.ChatCommands.Add(new Command("ctf.play", cmdJoin, "join"));
-            Commands.ChatCommands.Add(new Command("ctf.play", cmdClass, "class"));
-            Commands.ChatCommands.Add(new Command("ctf.skip", cmdSkip, "skip"));
+            Action<Command> add = c => {
+                Commands.ChatCommands.RemoveAll(c2 => c2.Names.Exists(s2 => c.Names.Contains(s2)));
+                Commands.ChatCommands.Add(c);
+            };
+            add(new Command("ctf.spawn", cmdSpawn, "spawn"));
+            add(new Command("ctf.play", cmdJoin, "join"));
+            add(new Command("ctf.play", cmdClass, "class"));
+            add(new Command("ctf.skip", cmdSkip, "skip"));
         }
 
         #endregion
@@ -281,6 +285,26 @@ namespace CGGCTF
         #endregion
 
         #region Commands
+
+        void cmdSpawn(CommandArgs args)
+        {
+            var tplr = args.Player;
+            var ix = tplr.Index;
+            var id = tplr.User.ID;
+
+            if (!ctf.gameIsRunning || !ctf.playerExists(id)) {
+                tplr.Teleport(Main.spawnTileX * 16, Main.spawnTileY * 16);
+                tplr.SendSuccessMessage("Warped to spawn point.");
+            } else if (ctf.isPvPPhase) {
+                tplr.SendErrorMessage("You can't warp to spawn now!");
+            } else if (ctf.playerTeam(id) == CTFTeam.Red) {
+                tplr.Teleport(redSpawn.X * 16, (redSpawn.Y - 3) * 16);
+                tplr.SendSuccessMessage("Warped to spawn point.");
+            } else if (ctf.playerTeam(id) == CTFTeam.Blue) {
+                tplr.Teleport(blueSpawn.X * 16, (blueSpawn.Y - 3) * 16);
+                tplr.SendSuccessMessage("Warped to spawn point.");
+            }
+        }
 
         void cmdJoin(CommandArgs args)
         {
@@ -514,10 +538,10 @@ namespace CGGCTF
             int f2y = findGround(f2x) - 2;
 
             int s1x = middle - spawnDistance;
-            int s1y = findGround(s1x) - 5;
+            int s1y = findGround(s1x) - 2;
 
             int s2x = middle + spawnDistance;
-            int s2y = findGround(s2x) - 5;
+            int s2y = findGround(s2x) - 2;
 
             if (rng.Next(2) == 0) {
                 redFlag.X = f1x;

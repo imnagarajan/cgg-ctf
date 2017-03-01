@@ -65,6 +65,11 @@ namespace CGGCTF
             return players[id].PickedClass;
         }
 
+        public CTFTeam playerTeam(int id)
+        {
+            return players[id].Team;
+        }
+
         bool checkEndgame()
         {
             return (Math.Abs(redScore - blueScore) >= 2);
