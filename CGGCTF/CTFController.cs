@@ -99,11 +99,12 @@ namespace CGGCTF
             setTeam(id);
             setPvP(id);
             tellPlayerTeam(id);
-            if (!players[id].PickedClass)
+            if (!players[id].PickedClass) {
                 tellPlayerSelectClass(id);
-            else
+            } else {
                 tellPlayerCurrentClass(id);
-            setInventory(id);
+                setInventory(id);
+            }
         }
 
         #endregion
@@ -133,8 +134,9 @@ namespace CGGCTF
         public void leaveGame(int id)
         {
             Debug.Assert(playerExists(id));
-            saveInventory(id);
             if (gameIsRunning) {
+                if (players[id].PickedClass)
+                    saveInventory(id);
                 flagDrop(id);
                 informPlayerLeave(id);
             } else {
@@ -264,12 +266,14 @@ namespace CGGCTF
         void setInventory(int id)
         {
             Debug.Assert(playerExists(id));
+            Debug.Assert(players[id].PickedClass);
             cb.setInventory(id, players[id].Data);
         }
 
         void saveInventory(int id)
         {
             Debug.Assert(playerExists(id));
+            Debug.Assert(players[id].PickedClass);
             PlayerData toSave = cb.saveInventory(id);
             players[id].Data = toSave;
         }

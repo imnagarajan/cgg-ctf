@@ -25,6 +25,7 @@ namespace CGGCTF
 
         CTFController ctf;
         CTFClassManager classes;
+        CTFClass blankClass;
 
         TeamColor[] playerColor = new TeamColor[256];
         bool[] playerPvP = new bool[256];
@@ -196,6 +197,11 @@ namespace CGGCTF
             };
 
             ctf = new CTFController(cb);
+            classes = new CTFClassManager();
+
+            blankClass = new CTFClass();
+            for (int i = 0; i < NetItem.MaxInventory; ++i)
+                blankClass.Inventory[i] = new NetItem(0, 0, 0);
 
             // commands
 
@@ -225,6 +231,10 @@ namespace CGGCTF
             originalChar[ix] = new PlayerData(tplr);
             originalChar[ix].CopyCharacter(tplr);
 
+            var pdata = new PlayerData(tplr);
+            blankClass.CopyToPlayerData(pdata);
+            pdata.RestoreCharacter(tplr);
+
             // TODO - make joining player sees the message
             if (ctf.playerExists(id))
                 ctf.rejoinGame(id);
@@ -243,6 +253,10 @@ namespace CGGCTF
             TShock.CharacterDB.InsertPlayerData(tplr);
 
             tplr.IsLoggedIn = false;
+
+            var pdata = new PlayerData(tplr);
+            blankClass.CopyToPlayerData(pdata);
+            pdata.RestoreCharacter(tplr);
         }
 
         void onLeave(LeaveEventArgs args)
@@ -302,8 +316,8 @@ namespace CGGCTF
                     return;
                 }
                 ctf.pickClass(id, cls);
+                // TODO - check if player owns it
             }
-
         }
 
         void cmdSkip(CommandArgs args)

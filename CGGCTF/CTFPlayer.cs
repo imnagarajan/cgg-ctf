@@ -28,6 +28,7 @@ namespace CGGCTF
         {
             Team = CTFTeam.None;
             Class = null;
+            Data = new PlayerData(null);
         }
     }
 }

@@ -14,15 +14,28 @@ namespace CGGCTF
 {
     public class CTFClass
     {
-        public int ID = -1;
-        public string Name = null;
-        public string Description = null;
-        public int HP = 100;
-        public int Mana = 20;
-        public NetItem[] Inventory = new NetItem[NetItem.MaxInventory];
-        public int Price = 0;
-        public bool Hidden = false;
-        public bool Sell = false;
+        public int ID { get; set; }
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public int HP { get; set; }
+        public int Mana { get; set; }
+        public NetItem[] Inventory { get; set; }
+        public int Price { get; set; }
+        public bool Hidden { get; set; }
+        public bool Sell { get; set; }
+
+        public CTFClass()
+        {
+            ID = -1;
+            Name = null;
+            Description = null;
+            HP = 100;
+            Mana = 20;
+            Inventory = new NetItem[NetItem.MaxInventory];
+            Price = 0;
+            Hidden = true;
+            Sell = false;
+        }
 
         public void CopyToPlayerData(PlayerData pd)
         {
