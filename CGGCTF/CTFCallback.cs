@@ -30,7 +30,7 @@ namespace CGGCTF
         public delegate void announceGameEndD(CTFTeam winner, int redScore, int blueScore);
         public delegate void tellPlayerTeamD(int id, CTFTeam team);
         public delegate void tellPlayerSelectClassD(int id);
-        public delegate void tellPlayerCurrentClassD(int id, int cls);
+        public delegate void tellPlayerCurrentClassD(int id, string name);
 
         public setTeamD setTeam;
         public setPvPD setPvP;

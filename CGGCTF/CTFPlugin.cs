@@ -24,6 +24,8 @@ namespace CGGCTF
         public CTFPlugin(Main game) : base(game) { }
 
         CTFController ctf;
+        CTFClassManager classes;
+
         TeamColor[] playerColor = new TeamColor[256];
         bool[] playerPvP = new bool[256];
         PlayerData[] originalChar = new PlayerData[256];
@@ -188,10 +190,9 @@ namespace CGGCTF
                 var tplr = TShock.Players[revID[id]];
                 tplr.SendInfoMessage("Select your class with {0}class.", Commands.Specifier);
             };
-            cb.tellPlayerCurrentClass = delegate (int id, int cls) {
+            cb.tellPlayerCurrentClass = delegate (int id, string cls) {
                 var tplr = TShock.Players[revID[id]];
-                throw new NotImplementedException();
-                // TODO - implement classes
+                tplr.SendInfoMessage("Your class is {0}.", cls);
             };
 
             ctf = new CTFController(cb);
@@ -270,7 +271,39 @@ namespace CGGCTF
 
         void cmdClass(CommandArgs args)
         {
-            
+            var tplr = args.Player;
+            var ix = tplr.Index;
+            var id = tplr.User.ID;
+
+            if (args.Parameters.Count == 0) {
+                tplr.SendErrorMessage("Usage: {0}class <name/list>", Commands.Specifier);
+                return;
+            }
+
+            string className = string.Join(" ", args.Parameters).ToLower();
+            if (className == "list") {
+                // TODO - class list
+            } else {
+                if (!ctf.gameIsRunning) {
+                    tplr.SendErrorMessage("The game hasn't started yet!");
+                    return;
+                }
+                if (!ctf.playerExists(id)) {
+                    tplr.SendErrorMessage("You are not in the game!");
+                    return;
+                }
+                if (ctf.pickedClass(id)) {
+                    tplr.SendErrorMessage("You already picked a class!");
+                    return;
+                }
+                CTFClass cls = classes.getClass(className);
+                if (cls == null) {
+                    tplr.SendErrorMessage("Class {0} doesn't exist. Try {1}class list.", className, Commands.Specifier);
+                    return;
+                }
+                ctf.pickClass(id, cls);
+            }
+
         }
 
         void cmdSkip(CommandArgs args)

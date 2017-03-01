@@ -65,6 +65,11 @@ namespace CGGCTF
             return players.ContainsKey(id);
         }
 
+        public bool pickedClass(int id)
+        {
+            return players[id].PickedClass;
+        }
+
         bool checkEndgame()
         {
             return (Math.Abs(redScore - blueScore) >= 2);
@@ -137,6 +142,16 @@ namespace CGGCTF
                 --totalPlayer;
             }
             --onlinePlayer;
+        }
+
+        public void pickClass(int id, CTFClass cls)
+        {
+            Debug.Assert(playerExists(id));
+            Debug.Assert(gameIsRunning);
+            players[id].Class = cls;
+            cls.CopyToPlayerData(players[id].Data);
+            tellPlayerCurrentClass(id);
+            setInventory(id);
         }
 
         public void getFlag(int id)
@@ -249,14 +264,14 @@ namespace CGGCTF
         void setInventory(int id)
         {
             Debug.Assert(playerExists(id));
-            cb.setInventory(id, players[id].Inventory);
+            cb.setInventory(id, players[id].Data);
         }
 
         void saveInventory(int id)
         {
             Debug.Assert(playerExists(id));
             PlayerData toSave = cb.saveInventory(id);
-            players[id].Inventory = toSave;
+            players[id].Data = toSave;
         }
 
         void warpToSpawn(int id)
@@ -331,7 +346,7 @@ namespace CGGCTF
         void tellPlayerCurrentClass(int id)
         {
             Debug.Assert(playerExists(id));
-            cb.tellPlayerCurrentClass(id, players[id].Class);
+            cb.tellPlayerCurrentClass(id, players[id].Class.Name);
         }
 
         #endregion

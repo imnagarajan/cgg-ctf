@@ -16,18 +16,18 @@ namespace CGGCTF
     public class CTFPlayer
     {
         public CTFTeam Team;
-        public int Class;
+        public CTFClass Class;
         public bool PickedClass {
             get {
-                return Class != -1;
+                return Class != null;
             }
         }
-        public PlayerData Inventory;
+        public PlayerData Data;
 
         public CTFPlayer()
         {
             Team = CTFTeam.None;
-            Class = -1;
+            Class = null;
         }
     }
 }
