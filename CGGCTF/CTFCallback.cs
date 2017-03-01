@@ -14,6 +14,7 @@ namespace CGGCTF
 {
     public class CTFCallback
     {
+        public delegate void decidePositionsD();
         public delegate void setTeamD(int id, CTFTeam team);
         public delegate void setPvPD(int id, bool pvp);
         public delegate void setInventoryD(int id, PlayerData data);
@@ -32,6 +33,7 @@ namespace CGGCTF
         public delegate void tellPlayerSelectClassD(int id);
         public delegate void tellPlayerCurrentClassD(int id, string name);
 
+        public decidePositionsD decidePositions;
         public setTeamD setTeam;
         public setPvPD setPvP;
         public setInventoryD setInventory;

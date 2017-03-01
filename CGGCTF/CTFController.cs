@@ -1,14 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Diagnostics;
 
-using Terraria;
-using TerrariaApi.Server;
 using TShockAPI;
-using TShockAPI.DB;
-using TShockAPI.Hooks;
 
 namespace CGGCTF
 {
@@ -105,6 +100,7 @@ namespace CGGCTF
                 tellPlayerCurrentClass(id);
                 setInventory(id);
             }
+            warpToSpawn(id);
         }
 
         #endregion
@@ -211,6 +207,7 @@ namespace CGGCTF
         {
             Debug.Assert(gamePhase == CTFPhase.Lobby);
             gamePhase = CTFPhase.Preparation;
+            decidePositions();
             announceGameStart();
             foreach (var id in players.Keys) {
                 var player = players[id];
@@ -250,6 +247,11 @@ namespace CGGCTF
         #endregion
 
         #region Callback managers
+
+        void decidePositions()
+        {
+            cb.decidePositions();
+        }
 
         void setTeam(int id)
         {

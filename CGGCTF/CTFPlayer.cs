@@ -1,15 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Diagnostics;
 
-using OTAPI;
-using Terraria;
-using TerrariaApi.Server;
 using TShockAPI;
-using TShockAPI.Hooks;
-using TShockAPI.DB;
 
 namespace CGGCTF
 {

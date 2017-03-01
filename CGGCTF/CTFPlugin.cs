@@ -1,16 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Reflection;
 using System.Diagnostics;
 
-using OTAPI;
+using OTAPI.Tile;
 using Terraria;
 using TerrariaApi.Server;
 using TShockAPI;
 using TShockAPI.Hooks;
-using TShockAPI.DB;
+
+using Microsoft.Xna.Framework;
 
 namespace CGGCTF
 {
@@ -23,6 +23,7 @@ namespace CGGCTF
         public override Version Version { get { return Assembly.GetExecutingAssembly().GetName().Version; } }
         public CTFPlugin(Main game) : base(game) { }
 
+        Random rng;
         CTFController ctf;
         CTFClassManager classes;
         CTFClass blankClass;
@@ -32,7 +33,10 @@ namespace CGGCTF
         PlayerData[] originalChar = new PlayerData[256];
         Dictionary<int, int> revID = new Dictionary<int, int>(); // user ID to index lookup
 
-        dynamic redSpawn, blueSpawn; // TODO - get properly data type
+        Point redSpawn, blueSpawn;
+        Point redFlag, blueFlag;
+        Tile[,] realTiles;
+        int width = 10;
 
         #region Initialization
 
@@ -66,6 +70,9 @@ namespace CGGCTF
             // callbacks
             CTFCallback cb = new CTFCallback();
 
+            cb.decidePositions = delegate () {
+                decidePositions();
+            };
             cb.setTeam = delegate (int id, CTFTeam team) {
                 TeamColor color = TeamColor.White;
                 if (team == CTFTeam.Red)
@@ -92,11 +99,9 @@ namespace CGGCTF
             cb.warpToSpawn = delegate (int id, CTFTeam team) {
                 var tplr = TShock.Players[revID[id]];
                 if (team == CTFTeam.Red)
-                    tplr.SendWarningMessage("Debug: Warped to red spawn.");
-                    //tplr.Teleport(redSpawn.X, redSpawn.Y);
+                    tplr.Teleport(redSpawn.X * 16, redSpawn.Y * 16);
                 else if (team == CTFTeam.Blue)
-                    tplr.SendWarningMessage("Debug: Warped to blue spawn.");
-                    //tplr.Teleport(blueSpawn.X, blueSpawn.Y);
+                    tplr.Teleport(blueSpawn.X * 16, blueSpawn.Y * 16);
             };
             cb.informPlayerJoin = delegate (int id, CTFTeam team) {
                 var tplr = TShock.Players[revID[id]];
@@ -162,12 +167,15 @@ namespace CGGCTF
             };
             cb.announceGameStart = delegate () {
                 announceMessage("The game has started! You have 5 minutes to prepare your base!");
+                addSpawnAndFlag();
+                addMiddleBlock();
                 // TODO - timer
             };
             cb.announceCombatStart = delegate () {
                 announceMessage("Preparation phase has ended! Capture the other team's flag!");
                 announceMessage("First team to get 2 points more than the other team wins!");
-                // TODO- timer
+                removeMiddleBlock();
+                // TODO - timer
             };
             cb.announceGameEnd = delegate (CTFTeam winner, int redScore, int blueScore) {
                 announceMessage("The game has ended with score of {0} - {1}.", redScore, blueScore);
@@ -181,11 +189,12 @@ namespace CGGCTF
             cb.tellPlayerTeam = delegate (int id, CTFTeam team) {
                 Debug.Assert(team != CTFTeam.None);
                 var tplr = TShock.Players[revID[id]];
-                // TODO - tell opponent direction
                 if (team == CTFTeam.Red)
-                    sendRedMessage(tplr, "You are on the red team.");
+                    sendRedMessage(tplr, "You are on the red team. Your opponent is to the {0}.",
+                        redSpawn.X > blueSpawn.X ? "left" : "right");
                 else
-                    sendBlueMessage(tplr, "You are on the blue team.");
+                    sendBlueMessage(tplr, "You are on the blue team. Your opponent is to the {0}.",
+                        blueSpawn.X > redSpawn.X ? "left" : "right");
             };
             cb.tellPlayerSelectClass = delegate (int id) {
                 var tplr = TShock.Players[revID[id]];
@@ -198,6 +207,7 @@ namespace CGGCTF
 
             ctf = new CTFController(cb);
             classes = new CTFClassManager();
+            rng = new Random();
 
             blankClass = new CTFClass();
             for (int i = 0; i < NetItem.MaxInventory; ++i)
@@ -385,7 +395,7 @@ namespace CGGCTF
         {
             sendBlueMessage(TSPlayer.All, msg, args);
         }
-        
+
         void announceMessage(string msg, params object[] args)
         {
             TSPlayer.All.SendInfoMessage(msg, args);
@@ -394,6 +404,132 @@ namespace CGGCTF
         void announceScore(int red, int blue)
         {
             announceMessage("Current Score | Red {0} - {1} Blue", red, blue);
+        }
+        #endregion
+
+        #region Tiles
+
+        // courtesy of WorldEdit source code
+
+        bool solidTile(int x, int y)
+        {
+            return x < 0 || y < 0 || x >= Main.maxTilesX || y >= Main.maxTilesY || (Main.tile[x, y].active() && Main.tileSolid[Main.tile[x, y].type]);
+        }
+
+        void resetSection(int x, int x2, int y, int y2)
+        {
+            int lowX = Netplay.GetSectionX(x);
+            int highX = Netplay.GetSectionX(x2);
+            int lowY = Netplay.GetSectionY(y);
+            int highY = Netplay.GetSectionY(y2);
+            foreach (RemoteClient sock in Netplay.Clients.Where(s => s.IsActive)) {
+                for (int i = lowX; i <= highX; i++) {
+                    for (int j = lowY; j <= highY; j++)
+                        sock.TileSections[i, j] = false;
+                }
+            }
+        }
+
+        int findGround(int x)
+        {
+            int y = 0;
+            for (int i = 1; i < Main.maxTilesY; ++i) {
+                if (Main.tile[x, i].type == 189
+                    || Main.tile[x, i].type == 196) {
+                    y = 0;
+                } else if (solidTile(x, i) && y == 0) {
+                    y = i;
+                }
+            }
+            y -= 2;
+            return y;
+        }
+
+        void decidePositions()
+        {
+            int flagDistance = 225;
+            int spawnDistance = 300;
+
+            int middle = Main.maxTilesX / 2;
+
+            int f1x = middle - flagDistance;
+            int f1y = findGround(f1x);
+
+            int f2x = middle + flagDistance;
+            int f2y = findGround(f2x);
+
+            int s1x = middle - spawnDistance;
+            int s1y = findGround(s1x);
+
+            int s2x = middle + spawnDistance;
+            int s2y = findGround(s2x);
+
+            if (rng.Next(2) == 0) {
+                redFlag.X = f1x;
+                redFlag.Y = f1y;
+                redSpawn.X = s1x;
+                redSpawn.Y = s1y;
+                blueFlag.X = f2x;
+                blueFlag.Y = f2y;
+                blueSpawn.X = s2x;
+                blueSpawn.Y = s2y;
+            } else {
+                redFlag.X = f2x;
+                redFlag.Y = f2y;
+                redSpawn.X = s2x;
+                redSpawn.Y = s2y;
+                blueFlag.X = f1x;
+                blueFlag.Y = f1y;
+                blueSpawn.X = s1x;
+                blueSpawn.Y = s1y;
+            }
+        }
+
+        void addMiddleBlock()
+        {
+            realTiles = new Tile[width * 2, Main.maxTilesY];
+
+            int middle = Main.maxTilesX / 2;
+            int leftwall = middle - width;
+            int rightwall = middle + width;
+
+            for (int x = 0; x < 2 * width; ++x) {
+                for (int y = 0; y < Main.maxTilesY; ++y) {
+                    realTiles[x, y] = new Tile(Main.tile[leftwall + x, y]);
+                    var fakeTile = new Tile();
+                    fakeTile.active(true);
+                    fakeTile.frameX = -1;
+                    fakeTile.frameY = -1;
+                    fakeTile.liquidType(0);
+                    fakeTile.liquid = 0;
+                    fakeTile.slope(0);
+                    fakeTile.type = Terraria.ID.TileID.LihzahrdBrick;
+                    Main.tile[leftwall + x, y] = fakeTile;
+                }
+            }
+
+            resetSection(leftwall, rightwall, 0, Main.maxTilesY);
+        }
+
+        void removeMiddleBlock()
+        {
+            int middle = Main.maxTilesX / 2;
+            int leftwall = middle - width;
+            int rightwall = middle + width;
+
+            for (int x = 0; x < 2 * width; ++x) {
+                for (int y = 0; y < Main.maxTilesY; ++y) {
+                    Main.tile[leftwall + x, y] = realTiles[x, y];
+                }
+            }
+
+            resetSection(leftwall, rightwall, 0, Main.maxTilesY);
+            realTiles = null;
+        }
+
+        void addSpawnAndFlag()
+        {
+
         }
         #endregion
     }
