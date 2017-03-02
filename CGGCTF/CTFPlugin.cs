@@ -248,9 +248,9 @@ namespace CGGCTF
             };
             #endregion
 
-            ctf = new CTFController(cb);
-            classes = new CTFClassManager();
             rng = new Random();
+            ctf = new CTFController(cb, rng);
+            classes = new CTFClassManager();
 
             blankClass = new CTFClass();
             for (int i = 0; i < NetItem.MaxInventory; ++i)
@@ -369,25 +369,70 @@ namespace CGGCTF
 
         #region Data hooks
 
+        bool redSide(int x)
+        {
+            if (redSpawn.X < blueSpawn.X) {
+                return x < leftwall;
+            } else {
+                return x > rightwall;
+            }
+        }
+
+        bool blueSide(int x)
+        {
+            if (blueSpawn.X < redSpawn.X) {
+                return x < leftwall;
+            } else {
+                return x > rightwall;
+            }
+        }
+
         void onTileEdit(object sender, GetDataHandlers.TileEditEventArgs args)
         {
             if (args.Handled)
                 return;
 
-            if (invalidPlace(args.Player, args.X, args.Y)) {
-                args.Player.SetBuff(Terraria.ID.BuffID.Cursed, 180, true);
+            var tplr = args.Player;
+            var id = tplr.User.ID;
+
+            if (!ctf.playerExists(id))
+                return;
+
+            var team = ctf.playerTeam(id);
+
+            Action sendTile = () => {
                 args.Player.SendTileSquare(args.X, args.Y, 1);
                 args.Handled = true;
+            };
+            if (invalidPlace(team, args.X, args.Y)) {
+                args.Player.SetBuff(Terraria.ID.BuffID.Cursed, 180, true);
+                sendTile();
+            } else if (args.Action == GetDataHandlers.EditAction.PlaceTile) {
+                if (args.EditData == Terraria.ID.TileID.GrayBrick) {
+                    if (team == CTFTeam.Red && redSide(args.X)) {
+                        setTile(args.X, args.Y, Terraria.ID.TileID.RedBrick);
+                        sendTile();
+                    } else if (team == CTFTeam.Blue && blueSide(args.X)) {
+                        setTile(args.X, args.Y, Terraria.ID.TileID.CobaltBrick);
+                        sendTile();
+                    }
+                } else if ((args.EditData == Terraria.ID.TileID.RedBrick && (!redSide(args.X) || team != CTFTeam.Red))
+                    || (args.EditData == Terraria.ID.TileID.CobaltBrick && (!blueSide(args.X) || team != CTFTeam.Blue))) {
+                    setTile(args.X, args.Y, Terraria.ID.TileID.GrayBrick);
+                    sendTile();
+                }
             }
         }
 
-        bool invalidPlace(TSPlayer tplr, int x, int y)
+        bool invalidPlace(CTFTeam team, int x, int y)
         {
             if ((x >= leftwall - 1 && x <= rightwall + 1)
                 || (redSpawnArea.Contains(x, y))
                 || (blueSpawnArea.Contains(x, y))
                 || (x >= redFlagNoEdit.Left && x < redFlagNoEdit.Right && y < redFlagNoEdit.Bottom)
-                || (x >= blueFlagNoEdit.Left && x < blueFlagNoEdit.Right && y < blueFlagNoEdit.Bottom))
+                || (x >= blueFlagNoEdit.Left && x < blueFlagNoEdit.Right && y < blueFlagNoEdit.Bottom)
+                || (team == CTFTeam.Red && Main.tile[x, y].type == Terraria.ID.TileID.CobaltBrick)
+                || (team == CTFTeam.Blue && Main.tile[x, y].type == Terraria.ID.TileID.RedBrick))
                 return true;
 
             return false;

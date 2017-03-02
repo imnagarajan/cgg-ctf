@@ -46,9 +46,9 @@ namespace CGGCTF
         public int redScore { get; private set; } = 0;
         public int blueScore { get; private set; } = 0;
 
-        public CTFController(CTFCallback cb)
+        public CTFController(CTFCallback cb, Random rng)
         {
-            rng = new Random();
+            this.rng = rng;
             players = new Dictionary<int, CTFPlayer>();
             this.cb = cb;
         }
