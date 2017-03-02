@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Timers;
 using System.Diagnostics;
 
@@ -72,9 +73,12 @@ namespace CGGCTF
             PlayerHooks.PlayerPostLogin += onLogin;
             PlayerHooks.PlayerLogout += onLogout;
             ServerApi.Hooks.ServerLeave.Register(this, onLeave);
+
             GetDataHandlers.TileEdit += onTileEdit;
             GetDataHandlers.PlayerUpdate += onPlayerUpdate;
             GetDataHandlers.KillMe += onDeath;
+            ServerApi.Hooks.NetSendData.Register(this, onSendData);
+
             GetDataHandlers.PlayerTeam += onPlayerTeam;
             GetDataHandlers.TogglePvp += onTogglePvP;
         }
@@ -87,9 +91,12 @@ namespace CGGCTF
                 PlayerHooks.PlayerPostLogin -= onLogin;
                 PlayerHooks.PlayerLogout -= onLogout;
                 ServerApi.Hooks.ServerLeave.Deregister(this, onLeave);
+
                 GetDataHandlers.TileEdit -= onTileEdit;
                 GetDataHandlers.PlayerUpdate -= onPlayerUpdate;
                 GetDataHandlers.KillMe -= onDeath;
+                ServerApi.Hooks.NetSendData.Deregister(this, onSendData);
+
                 GetDataHandlers.PlayerTeam -= onPlayerTeam;
                 GetDataHandlers.TogglePvp -= onTogglePvP;
             }
@@ -162,6 +169,7 @@ namespace CGGCTF
                 Debug.Assert(team != CTFTeam.None);
                 var tplr = TShock.Players[revID[id]];
                 // TODO - add crown to head
+                displayTime();
                 if (team == CTFTeam.Red) {
                     removeBlueFlag();
                     announceRedMessage("{0} is taking blue team's flag!", tplr.Name);
@@ -174,6 +182,7 @@ namespace CGGCTF
                 Debug.Assert(team != CTFTeam.None);
                 var tplr = TShock.Players[revID[id]];
                 // TODO - remove crown from head
+                displayTime();
                 if (team == CTFTeam.Red) {
                     addBlueFlag();
                     announceRedMessage("{0} captured blue team's flag and scored a point!", tplr.Name);
@@ -187,6 +196,7 @@ namespace CGGCTF
                 Debug.Assert(team != CTFTeam.None);
                 var tplr = TShock.Players[revID[id]];
                 // TODO - remove crown from head
+                displayTime();
                 if (team == CTFTeam.Red) {
                     addBlueFlag();
                     announceRedMessage("{0} dropped blue team's flag.", tplr.Name);
@@ -209,6 +219,7 @@ namespace CGGCTF
                 timeLeft = combatTime;
             };
             cb.announceGameEnd = delegate (CTFTeam winner, int redScore, int blueScore) {
+                timeLeft = 0;
                 announceMessage("The game has ended with score of {0} - {1}.", redScore, blueScore);
                 if (winner == CTFTeam.Red)
                     announceRedMessage("Congratulations to red team!");
@@ -261,11 +272,34 @@ namespace CGGCTF
             #endregion
         }
 
+        void displayTime()
+        {
+            var ss = new StringBuilder();
+            ss.Append("{0} phase".SFormat(ctf.gamePhase == CTFPhase.Preparation ? "Preparation" : "Combat"));
+            ss.Append("\nTime left - {0}:{1:d2}".SFormat(timeLeft / 60, timeLeft % 60));
+            ss.Append("\n");
+            ss.Append("\nRed | {0} - {1} | Blue".SFormat(ctf.redScore, ctf.blueScore));
+            ss.Append("\n");
+            if (ctf.blueFlagHeld)
+                ss.Append("\n{0} has blue flag.".SFormat(TShock.Players[revID[ctf.blueFlagHolder]].Name));
+            if (ctf.redFlagHeld)
+                ss.Append("\n{0} has red flag.".SFormat(TShock.Players[revID[ctf.redFlagHolder]].Name));
+
+            for (int i = 0; i < 50; ++i)
+                ss.Append("\n");
+            ss.Append("a");
+            for (int i = 0; i < 24; ++i)
+                ss.Append(" ");
+            ss.Append("\nctf");
+
+            TSPlayer.All.SendData(PacketTypes.Status, ss.ToString(), 0);
+        }
+
         void onTime(object sender, ElapsedEventArgs args)
         {
             if (timeLeft > 0) {
                 --timeLeft;
-                // show on status
+                displayTime();
                 if (timeLeft == 0) {
                     ctf.nextPhase();
                 } else if (timeLeft == 60) {
@@ -333,7 +367,7 @@ namespace CGGCTF
 
         #endregion
 
-        #region Movement/tile hooks
+        #region Data hooks
 
         void onTileEdit(object sender, GetDataHandlers.TileEditEventArgs args)
         {
@@ -352,10 +386,10 @@ namespace CGGCTF
             if ((x >= leftwall - 1 && x <= rightwall + 1)
                 || (redSpawnArea.Contains(x, y))
                 || (blueSpawnArea.Contains(x, y))
-                || (redFlagNoEdit.Contains(x, y))
-                || (blueFlagNoEdit.Contains(x, y))) {
+                || (x >= redFlagNoEdit.Left && x < redFlagNoEdit.Right && y < redFlagNoEdit.Bottom)
+                || (x >= blueFlagNoEdit.Left && x < blueFlagNoEdit.Right && y < blueFlagNoEdit.Bottom))
                 return true;
-            }
+
             return false;
         }
 
@@ -392,6 +426,13 @@ namespace CGGCTF
 
             if (ctf.playerExists(id))
                 ctf.flagDrop(id);
+        }
+
+        void onSendData(SendDataEventArgs args)
+        {
+            if (args.MsgId == PacketTypes.Status
+                && !args.text.EndsWith("\nctf"))
+                args.Handled = true;
         }
 
         #endregion
@@ -632,7 +673,7 @@ namespace CGGCTF
 
         void decidePositions()
         {
-            int flagDistance = 175;
+            int flagDistance = 225;
             int spawnDistance = 300;
 
             int middle = Main.maxTilesX / 2;
