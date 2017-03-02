@@ -63,7 +63,7 @@ namespace CGGCTF
 
         int prepTime = 60 * 5;
         int combatTime = 60 * 15;
-
+        
         #region Initialization
 
         public override void Initialize()
@@ -77,6 +77,7 @@ namespace CGGCTF
             GetDataHandlers.TileEdit += onTileEdit;
             GetDataHandlers.PlayerUpdate += onPlayerUpdate;
             GetDataHandlers.KillMe += onDeath;
+            GetDataHandlers.PlayerSpawn += onSpawn;
             ServerApi.Hooks.NetSendData.Register(this, onSendData);
 
             GetDataHandlers.PlayerTeam += onPlayerTeam;
@@ -95,6 +96,7 @@ namespace CGGCTF
                 GetDataHandlers.TileEdit -= onTileEdit;
                 GetDataHandlers.PlayerUpdate -= onPlayerUpdate;
                 GetDataHandlers.KillMe -= onDeath;
+                GetDataHandlers.PlayerSpawn -= onSpawn;
                 ServerApi.Hooks.NetSendData.Deregister(this, onSendData);
 
                 GetDataHandlers.PlayerTeam -= onPlayerTeam;
@@ -134,11 +136,7 @@ namespace CGGCTF
                 return data;
             };
             cb.warpToSpawn = delegate (int id, CTFTeam team) {
-                var tplr = TShock.Players[revID[id]];
-                if (team == CTFTeam.Red)
-                    tplr.Teleport(redSpawn.X * 16, (redSpawn.Y - 3) * 16);
-                else if (team == CTFTeam.Blue)
-                    tplr.Teleport(blueSpawn.X * 16, (blueSpawn.Y - 3) * 16);
+                spawnPlayer(id, team);
             };
             cb.informPlayerJoin = delegate (int id, CTFTeam team) {
                 var tplr = TShock.Players[revID[id]];
@@ -473,6 +471,33 @@ namespace CGGCTF
                 ctf.flagDrop(id);
         }
 
+        bool spawnPlayer(int id, CTFTeam team)
+        {
+            var tplr = TShock.Players[revID[id]];
+            if (team == CTFTeam.Red) {
+                return tplr.Teleport(redSpawn.X * 16, (redSpawn.Y - 3) * 16);
+            } else if (team == CTFTeam.Blue) {
+                return tplr.Teleport(blueSpawn.X * 16, (blueSpawn.Y - 3) * 16);
+            }
+            return false;
+        }
+
+        void onSpawn(object sender, GetDataHandlers.SpawnEventArgs args)
+        {
+            if (args.Handled)
+                return;
+
+            var ix = args.Player;
+            var tplr = TShock.Players[ix];
+            var id = tplr.User.ID;
+
+            if (!tplr.Active || !ctf.playerExists(id) || !ctf.gameIsRunning)
+                return;
+
+            if (spawnPlayer(id, ctf.playerTeam(id)))
+                args.Handled = true;
+        }
+
         void onSendData(SendDataEventArgs args)
         {
             if (args.MsgId == PacketTypes.Status
@@ -495,11 +520,8 @@ namespace CGGCTF
                 tplr.SendSuccessMessage("Warped to spawn point.");
             } else if (ctf.isPvPPhase) {
                 tplr.SendErrorMessage("You can't warp to spawn now!");
-            } else if (ctf.playerTeam(id) == CTFTeam.Red) {
-                tplr.Teleport(redSpawn.X * 16, (redSpawn.Y - 3) * 16);
-                tplr.SendSuccessMessage("Warped to spawn point.");
-            } else if (ctf.playerTeam(id) == CTFTeam.Blue) {
-                tplr.Teleport(blueSpawn.X * 16, (blueSpawn.Y - 3) * 16);
+            } else {
+                spawnPlayer(id, ctf.playerTeam(id));
                 tplr.SendSuccessMessage("Warped to spawn point.");
             }
         }
