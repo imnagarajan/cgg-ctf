@@ -33,10 +33,28 @@ namespace CGGCTF
         PlayerData[] originalChar = new PlayerData[256];
         Dictionary<int, int> revID = new Dictionary<int, int>(); // user ID to index lookup
 
-        Point redSpawn, blueSpawn;
-        Point redFlag, blueFlag;
+        Point redSpawn, blueSpawn, redFlag, blueFlag;
+        Rectangle redSpawnArea, blueSpawnArea;
+        Rectangle redFlagNoEdit, blueFlagNoEdit;
+        Rectangle redFlagArea, blueFlagArea;
         Tile[,] realTiles;
+
         int width = 10;
+        int middle {
+            get {
+                return Main.maxTilesX / 2;
+            }
+        }
+        int leftwall {
+            get {
+                return middle - width;
+            }
+        }
+        int rightwall {
+            get {
+                return middle + width;
+            }
+        }
 
         #region Initialization
 
@@ -47,6 +65,9 @@ namespace CGGCTF
             PlayerHooks.PlayerPostLogin += onLogin;
             PlayerHooks.PlayerLogout += onLogout;
             ServerApi.Hooks.ServerLeave.Register(this, onLeave);
+            GetDataHandlers.TileEdit += onTileEdit;
+            GetDataHandlers.PlayerUpdate += onPlayerUpdate;
+            GetDataHandlers.KillMe += onDeath;
             GetDataHandlers.PlayerTeam += onPlayerTeam;
             GetDataHandlers.TogglePvp += onTogglePvP;
         }
@@ -59,6 +80,9 @@ namespace CGGCTF
                 PlayerHooks.PlayerPostLogin -= onLogin;
                 PlayerHooks.PlayerLogout -= onLogout;
                 ServerApi.Hooks.ServerLeave.Deregister(this, onLeave);
+                GetDataHandlers.TileEdit -= onTileEdit;
+                GetDataHandlers.PlayerUpdate -= onPlayerUpdate;
+                GetDataHandlers.KillMe -= onDeath;
                 GetDataHandlers.PlayerTeam -= onPlayerTeam;
                 GetDataHandlers.TogglePvp -= onTogglePvP;
             }
@@ -149,7 +173,7 @@ namespace CGGCTF
                     announceRedMessage("{0} captured blue team's flag and scored a point!", tplr.Name);
                 } else {
                     addRedFlag();
-                    announceRedMessage("{0} captured red team's flag and scored a point!", tplr.Name);
+                    announceBlueMessage("{0} captured red team's flag and scored a point!", tplr.Name);
                 }
                 announceScore(redScore, blueScore);
             };
@@ -227,7 +251,7 @@ namespace CGGCTF
 
         #endregion
 
-        #region Hooks
+        #region Basic Hooks
 
         void onJoin(JoinEventArgs args)
         {
@@ -280,6 +304,69 @@ namespace CGGCTF
             var tplr = TShock.Players[args.Who];
             if (tplr != null && tplr.IsLoggedIn)
                 onLogout(new PlayerLogoutEventArgs(tplr));
+        }
+
+        #endregion
+
+        #region Movement/tile hooks
+
+        void onTileEdit(object sender, GetDataHandlers.TileEditEventArgs args)
+        {
+            if (args.Handled)
+                return;
+
+            if (invalidPlace(args.Player, args.X, args.Y)) {
+                args.Player.SetBuff(Terraria.ID.BuffID.Cursed, 180, true);
+                args.Player.SendTileSquare(args.X, args.Y, 1);
+                args.Handled = true;
+            }
+        }
+
+        bool invalidPlace(TSPlayer tplr, int x, int y)
+        {
+            if ((x >= leftwall - 1 && x <= rightwall + 1)
+                || (redSpawnArea.Contains(x, y))
+                || (blueSpawnArea.Contains(x, y))
+                || (redFlagNoEdit.Contains(x, y))
+                || (blueFlagNoEdit.Contains(x, y))) {
+                return true;
+            }
+            return false;
+        }
+
+        void onPlayerUpdate(object sender, GetDataHandlers.PlayerUpdateEventArgs args)
+        {
+            var ix = args.PlayerId;
+            var tplr = TShock.Players[ix];
+            var id = tplr.User.ID;
+
+            int x = (int)Math.Round(args.Position.X / 16);
+            int y = (int)Math.Round(args.Position.Y / 16);
+
+            if (!ctf.gameIsRunning || !ctf.playerExists(id))
+                return;
+
+            if (ctf.playerTeam(id) == CTFTeam.Red) {
+                if (redFlagArea.Contains(x, y))
+                    ctf.captureFlag(id);
+                else if (blueFlagArea.Contains(x, y))
+                    ctf.getFlag(id);
+            } else if (ctf.playerTeam(id) == CTFTeam.Blue) {
+                if (blueFlagArea.Contains(x, y))
+                    ctf.captureFlag(id);
+                else if (redFlagArea.Contains(x, y))
+                    ctf.getFlag(id);
+            }
+        }
+
+        void onDeath(object sender, GetDataHandlers.KillMeEventArgs args)
+        {
+            var ix = args.PlayerId;
+            var tplr = TShock.Players[ix];
+            var id = tplr.User.ID;
+
+            if (ctf.playerExists(id))
+                ctf.flagDrop(id);
         }
 
         #endregion
@@ -532,10 +619,10 @@ namespace CGGCTF
             int middle = Main.maxTilesX / 2;
 
             int f1x = middle - flagDistance;
-            int f1y = findGround(f1x) - 2;
+            int f1y = findGround(f1x) - 1;
 
             int f2x = middle + flagDistance;
-            int f2y = findGround(f2x) - 2;
+            int f2y = findGround(f2x) - 1;
 
             int s1x = middle - spawnDistance;
             int s1y = findGround(s1x) - 2;
@@ -568,10 +655,6 @@ namespace CGGCTF
         {
             realTiles = new Tile[width * 2 + 1, Main.maxTilesY];
 
-            int middle = Main.maxTilesX / 2;
-            int leftwall = middle - width;
-            int rightwall = middle + width;
-
             for (int x = 0; x <= 2 * width; ++x) {
                 for (int y = 0; y < Main.maxTilesY; ++y) {
                     realTiles[x, y] = new Tile(Main.tile[leftwall + x, y]);
@@ -584,9 +667,6 @@ namespace CGGCTF
 
         void removeMiddleBlock()
         {
-            int middle = Main.maxTilesX / 2;
-            int leftwall = middle - width;
-            int rightwall = middle + width;
 
             for (int x = 0; x <= 2 * width; ++x) {
                 for (int y = 0; y < Main.maxTilesY; ++y) {
@@ -614,10 +694,12 @@ namespace CGGCTF
                 leftSpawn = redSpawn;
                 tileID = Terraria.ID.TileID.RedBrick;
                 wallID = Terraria.ID.WallID.RedBrick;
+                redSpawnArea = new Rectangle(leftSpawn.X - 6, leftSpawn.Y - 9, 13 + 1, 11 + 1);
             } else {
                 leftSpawn = blueSpawn;
                 tileID = Terraria.ID.TileID.CobaltBrick;
                 wallID = Terraria.ID.WallID.CobaltBrick;
+                blueSpawnArea = new Rectangle(leftSpawn.X - 6, leftSpawn.Y - 9, 13 + 1, 11 + 1);
             }
 
             for (int i = -6; i <= 7; ++i) {
@@ -652,10 +734,12 @@ namespace CGGCTF
                 rightSpawn = blueSpawn;
                 tileID = Terraria.ID.TileID.CobaltBrick;
                 wallID = Terraria.ID.WallID.CobaltBrick;
+                blueSpawnArea = new Rectangle(rightSpawn.X - 7, rightSpawn.Y - 9, 13 + 1, 11 + 1);
             } else {
                 rightSpawn = redSpawn;
                 tileID = Terraria.ID.TileID.RedBrick;
                 wallID = Terraria.ID.WallID.RedBrick;
+                redSpawnArea = new Rectangle(rightSpawn.X - 7, rightSpawn.Y - 9, 13 + 1, 11 + 1);
             }
 
             for (int i = -7; i <= 6; ++i) {
@@ -692,6 +776,8 @@ namespace CGGCTF
             ushort redTile = Terraria.ID.TileID.RedBrick;
 
             if (full) {
+                redFlagArea = new Rectangle(redFlag.X - 1, redFlag.Y - 4, 3 + 1, 2 + 1);
+                redFlagNoEdit = new Rectangle(redFlag.X - 3, redFlag.Y - 6, 6 + 1, 7 + 1);
                 for (int i = -3; i <= 3; ++i) {
                     for (int j = -6; j <= 1; ++j)
                         setTile(redFlag.X + i, redFlag.Y + j, -1);
@@ -711,6 +797,8 @@ namespace CGGCTF
             ushort blueTile = Terraria.ID.TileID.CobaltBrick;
 
             if (full) {
+                blueFlagArea = new Rectangle(blueFlag.X - 1, blueFlag.Y - 4, 3 + 1, 2 + 1);
+                blueFlagNoEdit = new Rectangle(blueFlag.X - 3, blueFlag.Y - 6, 6 + 1, 7 + 1);
                 for (int i = -3; i <= 3; ++i) {
                     for (int j = -6; j <= 1; ++j)
                         setTile(blueFlag.X + i, blueFlag.Y + j, -1);

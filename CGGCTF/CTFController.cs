@@ -178,13 +178,15 @@ namespace CGGCTF
             Debug.Assert(playerExists(id));
             if (players[id].Team == CTFTeam.Red) {
                 if (blueFlagHolder == id) {
-                    announceCaptureFlag(id);
+                    blueFlagHolder = -1;
                     ++redScore;
+                    announceCaptureFlag(id);
                 }
             } else if (players[id].Team == CTFTeam.Blue) {
                 if (redFlagHolder == id) {
-                    announceCaptureFlag(id);
+                    redFlagHolder = -1;
                     ++blueScore;
+                    announceCaptureFlag(id);
                 }
             }
 
@@ -235,7 +237,7 @@ namespace CGGCTF
 
         public void endGame()
         {
-            Debug.Assert(gamePhase == CTFPhase.Combat);
+            Debug.Assert(gameIsRunning);
             gamePhase = CTFPhase.Ended;
 
             var win = CTFTeam.None;
