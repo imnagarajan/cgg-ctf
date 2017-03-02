@@ -210,6 +210,16 @@ namespace CGGCTF
             }
         }
 
+        public void nextPhase()
+        {
+            if (gamePhase == CTFPhase.Lobby)
+                startGame();
+            else if (gamePhase == CTFPhase.Preparation)
+                startCombat();
+            else if (gamePhase == CTFPhase.Combat)
+                endGame();
+        }
+
         public void startGame()
         {
             Debug.Assert(gamePhase == CTFPhase.Lobby);
@@ -221,6 +231,7 @@ namespace CGGCTF
                 Debug.Assert(player.Team == CTFTeam.None);
                 getPlayerStarted(id);
             }
+
         }
 
         public void startCombat()

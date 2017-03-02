@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Timers;
 using System.Diagnostics;
 
 using OTAPI.Tile;
@@ -39,6 +40,9 @@ namespace CGGCTF
         Rectangle redFlagArea, blueFlagArea;
         Tile[,] realTiles;
 
+        Timer timer;
+        int timeLeft;
+
         int width = 10;
         int middle {
             get {
@@ -55,6 +59,9 @@ namespace CGGCTF
                 return middle + width;
             }
         }
+
+        int prepTime = 60 * 5;
+        int combatTime = 60 * 15;
 
         #region Initialization
 
@@ -91,9 +98,8 @@ namespace CGGCTF
 
         void onInitialize(EventArgs args)
         {
-            // callbacks
+            #region Callbacks
             CTFCallback cb = new CTFCallback();
-
             cb.decidePositions = delegate () {
                 decidePositions();
             };
@@ -194,13 +200,13 @@ namespace CGGCTF
                 addSpawns();
                 addFlags();
                 addMiddleBlock();
-                // TODO - timer
+                timeLeft = prepTime;
             };
             cb.announceCombatStart = delegate () {
                 announceMessage("Preparation phase has ended! Capture the other team's flag!");
                 announceMessage("First team to get 2 points more than the other team wins!");
                 removeMiddleBlock();
-                // TODO - timer
+                timeLeft = combatTime;
             };
             cb.announceGameEnd = delegate (CTFTeam winner, int redScore, int blueScore) {
                 announceMessage("The game has ended with score of {0} - {1}.", redScore, blueScore);
@@ -229,6 +235,7 @@ namespace CGGCTF
                 var tplr = TShock.Players[revID[id]];
                 tplr.SendInfoMessage("Your class is {0}.", cls);
             };
+            #endregion
 
             ctf = new CTFController(cb);
             classes = new CTFClassManager();
@@ -238,7 +245,11 @@ namespace CGGCTF
             for (int i = 0; i < NetItem.MaxInventory; ++i)
                 blankClass.Inventory[i] = new NetItem(0, 0, 0);
 
-            // commands
+            timer = new Timer(1000);
+            timer.Start();
+            timer.Elapsed += onTime;
+
+            #region Commands
             Action<Command> add = c => {
                 Commands.ChatCommands.RemoveAll(c2 => c2.Names.Exists(s2 => c.Names.Contains(s2)));
                 Commands.ChatCommands.Add(c);
@@ -247,6 +258,20 @@ namespace CGGCTF
             add(new Command("ctf.play", cmdJoin, "join"));
             add(new Command("ctf.play", cmdClass, "class"));
             add(new Command("ctf.skip", cmdSkip, "skip"));
+            #endregion
+        }
+
+        void onTime(object sender, ElapsedEventArgs args)
+        {
+            if (timeLeft > 0) {
+                --timeLeft;
+                // show on status
+                if (timeLeft == 0) {
+                    ctf.nextPhase();
+                } else if (timeLeft == 60) {
+                    announceMessage("One minute left for current phase.");
+                }
+            }
         }
 
         #endregion
@@ -444,13 +469,7 @@ namespace CGGCTF
 
         void cmdSkip(CommandArgs args)
         {
-            // TODO - do this properly with timers
-            if (ctf.gamePhase == CTFPhase.Lobby)
-                ctf.startGame();
-            else if (ctf.gamePhase == CTFPhase.Preparation)
-                ctf.startCombat();
-            else if (ctf.gamePhase == CTFPhase.Combat)
-                ctf.endGame();
+            ctf.nextPhase();
         }
 
         #endregion 
