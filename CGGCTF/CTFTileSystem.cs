@@ -45,7 +45,7 @@ namespace CGGCTF
         }
         public CTFTeam RightTeam {
             get {
-                return redSpawn.X > blueSpawn.Y ? CTFTeam.Red : CTFTeam.Blue;
+                return redSpawn.X > blueSpawn.X ? CTFTeam.Red : CTFTeam.Blue;
             }
         }
 
