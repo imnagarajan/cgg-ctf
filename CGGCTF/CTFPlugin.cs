@@ -282,7 +282,7 @@ namespace CGGCTF
             var team = ctf.GetPlayerTeam(id);
 
             Action sendTile = () => {
-                args.Player.SendTileSquare(args.X, args.Y, 1);
+                TSPlayer.All.SendTileSquare(args.X, args.Y, 1);
                 args.Handled = true;
             };
             if (tiles.InvalidPlace(team, args.X, args.Y, !ctf.IsPvPPhase)) {
