@@ -66,14 +66,16 @@ namespace CGGCTF
             }
         }
 
-        ushort redBlock = Terraria.ID.TileID.RedBrick;
-        ushort blueBlock = Terraria.ID.TileID.CobaltBrick;
-        ushort redWall = Terraria.ID.WallID.RedBrick;
-        ushort blueWall = Terraria.ID.WallID.CobaltBrick;
-        ushort middleBlock = Terraria.ID.TileID.LihzahrdBrick;
-        ushort flagTile = Terraria.ID.TileID.Banners;
-        ushort flagRedStyle = 0;
-        ushort flagBlueStyle = 2;
+        // TODO - name capitalization
+        public ushort redBlock = Terraria.ID.TileID.RedBrick;
+        public ushort blueBlock = Terraria.ID.TileID.CobaltBrick;
+        public ushort redWall = Terraria.ID.WallID.RedBrick;
+        public ushort blueWall = Terraria.ID.WallID.CobaltBrick;
+        public ushort grayBlock = Terraria.ID.TileID.GrayBrick;
+        public ushort middleBlock = Terraria.ID.TileID.LihzahrdBrick;
+        public ushort flagTile = Terraria.ID.TileID.Banners;
+        public ushort flagRedStyle = 0;
+        public ushort flagBlueStyle = 2;
 
         #endregion
 
@@ -423,9 +425,9 @@ namespace CGGCTF
             return blueFlagArea.Contains(x, y);
         }
 
-        public bool InvalidPlace(CTFTeam team, int x, int y)
+        public bool InvalidPlace(CTFTeam team, int x, int y, bool middle)
         {
-            if ((x >= wallLeft - 1 && x <= wallRight + 1)
+            if ((middle && x >= wallLeft - 1 && x <= wallRight + 1)
                 || (redSpawnArea.Contains(x, y))
                 || (blueSpawnArea.Contains(x, y))
                 || (x >= redFlagNoEdit.Left && x < redFlagNoEdit.Right && y < redFlagNoEdit.Bottom)

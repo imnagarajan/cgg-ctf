@@ -56,7 +56,7 @@ namespace CGGCTF
             GetDataHandlers.PlayerSpawn += onSpawn;
             ServerApi.Hooks.NetSendData.Register(this, onSendData);
 
-            // TODO - GetDataHandlers.TileEdit += tiles.TileEditHook;
+            GetDataHandlers.TileEdit += onTileEdit;
             GetDataHandlers.PlayerTeam += pvp.PlayerTeamHook;
             GetDataHandlers.TogglePvp += pvp.TogglePvPHook;
         }
@@ -75,7 +75,7 @@ namespace CGGCTF
                 GetDataHandlers.PlayerSpawn -= onSpawn;
                 ServerApi.Hooks.NetSendData.Deregister(this, onSendData);
 
-                // TODO - GetDataHandlers.TileEdit -= tiles.TileEditHook;
+                GetDataHandlers.TileEdit -= onTileEdit;
                 GetDataHandlers.PlayerTeam -= pvp.PlayerTeamHook;
                 GetDataHandlers.TogglePvp -= pvp.TogglePvPHook;
             }
@@ -264,6 +264,45 @@ namespace CGGCTF
             if (args.MsgId == PacketTypes.Status
                 && !args.text.EndsWith("\nctf"))
                 args.Handled = true;
+        }
+
+        void onTileEdit(object sender, GetDataHandlers.TileEditEventArgs args)
+        {
+            // we have to bear with code mess sometimes
+
+            if (args.Handled)
+                return;
+
+            var tplr = args.Player;
+            var id = tplr.IsLoggedIn ? tplr.User.ID : -1;
+
+            if (!ctf.PlayerExists(id))
+                return;
+
+            var team = ctf.GetPlayerTeam(id);
+
+            Action sendTile = () => {
+                args.Player.SendTileSquare(args.X, args.Y, 1);
+                args.Handled = true;
+            };
+            if (tiles.InvalidPlace(team, args.X, args.Y, !ctf.IsPvPPhase)) {
+                args.Player.SetBuff(Terraria.ID.BuffID.Cursed, 180, true);
+                sendTile();
+            } else if (args.Action == GetDataHandlers.EditAction.PlaceTile) {
+                if (args.EditData == tiles.grayBlock) {
+                    if (team == CTFTeam.Red && tiles.InRedSide(args.X)) {
+                        tiles.SetTile(args.X, args.Y, tiles.redBlock);
+                        sendTile();
+                    } else if (team == CTFTeam.Blue && tiles.InBlueSide(args.X)) {
+                        tiles.SetTile(args.X, args.Y, tiles.blueBlock);
+                        sendTile();
+                    }
+                } else if ((args.EditData == tiles.redBlock && (!tiles.InRedSide(args.X) || team != CTFTeam.Red))
+                    || (args.EditData == tiles.blueBlock && (!tiles.InBlueSide(args.X) || team != CTFTeam.Blue))) {
+                    tiles.SetTile(args.X, args.Y, tiles.grayBlock);
+                    sendTile();
+                }
+            }
         }
 
         #endregion
