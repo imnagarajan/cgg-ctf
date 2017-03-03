@@ -51,7 +51,7 @@ namespace CGGCTF
                 new SqlColumn("Sell", MySqlDbType.Int32)));
         }
 
-        public List<CTFClass> getClasses()
+        public List<CTFClass> GetClasses()
         {
             var classes = new List<CTFClass>();
             try {
@@ -76,9 +76,9 @@ namespace CGGCTF
             return classes;
         }
 
-        public CTFClass getClass(string name)
+        public CTFClass GetClass(string name)
         {
-            List<CTFClass> classes = getClasses();
+            List<CTFClass> classes = GetClasses();
             return classes.FirstOrDefault(cls => cls.Name.ToLower() == name);
         }
     }

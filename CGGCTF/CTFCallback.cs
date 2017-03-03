@@ -14,42 +14,42 @@ namespace CGGCTF
 {
     public class CTFCallback
     {
-        public delegate void decidePositionsD();
-        public delegate void setTeamD(int id, CTFTeam team);
-        public delegate void setPvPD(int id, bool pvp);
-        public delegate void setInventoryD(int id, PlayerData data);
-        public delegate PlayerData saveInventoryD(int id);
-        public delegate void warpToSpawnD(int id, CTFTeam team);
-        public delegate void informPlayerJoinD(int id, CTFTeam team);
-        public delegate void informPlayerRejoinD(int id, CTFTeam team);
-        public delegate void informPlayerLeaveD(int id, CTFTeam team);
-        public delegate void announceGetFlagD(int id, CTFTeam team);
-        public delegate void announceCaptureFlagD(int id, CTFTeam team, int redScore, int blueScore);
-        public delegate void announceFlagDropD(int id, CTFTeam team);
-        public delegate void announceGameStartD();
-        public delegate void announceCombatStartD();
-        public delegate void announceGameEndD(CTFTeam winner, int redScore, int blueScore);
-        public delegate void tellPlayerTeamD(int id, CTFTeam team);
-        public delegate void tellPlayerSelectClassD(int id);
-        public delegate void tellPlayerCurrentClassD(int id, string name);
+        public delegate void DecidePositionsD();
+        public delegate void SetTeamD(int id, CTFTeam team);
+        public delegate void SetPvPD(int id, bool pvp);
+        public delegate void SetInventoryD(int id, PlayerData data);
+        public delegate PlayerData SaveInventoryD(int id);
+        public delegate void WarpToSpawnD(int id, CTFTeam team);
+        public delegate void InformPlayerJoinD(int id, CTFTeam team);
+        public delegate void InformPlayerRejoinD(int id, CTFTeam team);
+        public delegate void InformPlayerLeaveD(int id, CTFTeam team);
+        public delegate void AnnounceGetFlagD(int id, CTFTeam team);
+        public delegate void AnnounceCaptureFlagD(int id, CTFTeam team, int redScore, int blueScore);
+        public delegate void AnnounceFlagDropD(int id, CTFTeam team);
+        public delegate void AnnounceGameStartD();
+        public delegate void AnnounceCombatStartD();
+        public delegate void AnnounceGameEndD(CTFTeam winner, int redScore, int blueScore);
+        public delegate void TellPlayerTeamD(int id, CTFTeam team);
+        public delegate void TellPlayerSelectClassD(int id);
+        public delegate void TellPlayerCurrentClassD(int id, string name);
 
-        public decidePositionsD decidePositions;
-        public setTeamD setTeam;
-        public setPvPD setPvP;
-        public setInventoryD setInventory;
-        public saveInventoryD saveInventory;
-        public warpToSpawnD warpToSpawn;
-        public informPlayerJoinD informPlayerJoin;
-        public informPlayerRejoinD informPlayerRejoin;
-        public informPlayerLeaveD informPlayerLeave;
-        public announceGetFlagD announceGetFlag;
-        public announceCaptureFlagD announceCaptureFlag;
-        public announceFlagDropD announceFlagDrop;
-        public announceGameStartD announceGameStart;
-        public announceCombatStartD announceCombatStart;
-        public announceGameEndD announceGameEnd;
-        public tellPlayerTeamD tellPlayerTeam;
-        public tellPlayerSelectClassD tellPlayerSelectClass;
-        public tellPlayerCurrentClassD tellPlayerCurrentClass;
+        public DecidePositionsD DecidePositions;
+        public SetTeamD SetTeam;
+        public SetPvPD SetPvP;
+        public SetInventoryD SetInventory;
+        public SaveInventoryD SaveInventory;
+        public WarpToSpawnD WarpToSpawn;
+        public InformPlayerJoinD InformPlayerJoin;
+        public InformPlayerRejoinD InformPlayerRejoin;
+        public InformPlayerLeaveD InformPlayerLeave;
+        public AnnounceGetFlagD AnnounceGetFlag;
+        public AnnounceCaptureFlagD AnnounceCaptureFlag;
+        public AnnounceFlagDropD AnnounceFlagDrop;
+        public AnnounceGameStartD AnnounceGameStart;
+        public AnnounceCombatStartD AnnounceCombatStart;
+        public AnnounceGameEndD AnnounceGameEnd;
+        public TellPlayerTeamD TellPlayerTeam;
+        public TellPlayerSelectClassD TellPlayerSelectClass;
+        public TellPlayerCurrentClassD TellPlayerCurrentClass;
     }
 }

@@ -9,7 +9,8 @@ namespace CGGCTF
 {
     public class CTFController
     {
-        Random rng;
+        #region Variables
+
         CTFCallback cb;
 
         Dictionary<int, CTFPlayer> players;
@@ -46,26 +47,27 @@ namespace CGGCTF
         public int redScore { get; private set; } = 0;
         public int blueScore { get; private set; } = 0;
 
-        public CTFController(CTFCallback cb, Random rng)
+        #endregion
+
+        public CTFController(CTFCallback cb)
         {
-            this.rng = rng;
             players = new Dictionary<int, CTFPlayer>();
             this.cb = cb;
         }
 
         #region Helper functions
 
-        public bool playerExists(int id)
+        public bool PlayerExists(int id)
         {
             return players.ContainsKey(id);
         }
 
-        public bool pickedClass(int id)
+        public bool HasPickedClass(int id)
         {
             return players[id].PickedClass;
         }
 
-        public CTFTeam playerTeam(int id)
+        public CTFTeam GetPlayerTeam(int id)
         {
             return players[id].Team;
         }
@@ -82,14 +84,19 @@ namespace CGGCTF
 
             if (redPlayer < bluePlayer) {
                 players[id].Team = CTFTeam.Red;
+                ++redPlayer;
             } else if (bluePlayer < redPlayer) {
                 players[id].Team = CTFTeam.Blue;
+                ++bluePlayer;
             } else {
-                int randnum = rng.Next(2);
-                if (randnum == 0)
+                int randnum = CTFUtils.Random(2);
+                if (randnum == 0) {
                     players[id].Team = CTFTeam.Red;
-                else
+                    ++redPlayer;
+                } else {
                     players[id].Team = CTFTeam.Blue;
+                    ++bluePlayer;
+                }
             }
         }
 
@@ -112,9 +119,9 @@ namespace CGGCTF
 
         #region Main functions
 
-        public void joinGame(int id)
+        public void JoinGame(int id)
         {
-            Debug.Assert(!playerExists(id));
+            Debug.Assert(!PlayerExists(id));
             players[id] = new CTFPlayer();
             informPlayerJoin(id);
             if (gameIsRunning)
@@ -123,22 +130,22 @@ namespace CGGCTF
             ++onlinePlayer;
         }
 
-        public void rejoinGame(int id)
+        public void RejoinGame(int id)
         {
-            Debug.Assert(playerExists(id));
+            Debug.Assert(PlayerExists(id));
             Debug.Assert(gameIsRunning);
             informPlayerRejoin(id);
             getPlayerStarted(id);
             ++onlinePlayer;
         }
 
-        public void leaveGame(int id)
+        public void LeaveGame(int id)
         {
-            Debug.Assert(playerExists(id));
+            Debug.Assert(PlayerExists(id));
             if (gameIsRunning) {
                 if (players[id].PickedClass)
                     saveInventory(id);
-                flagDrop(id);
+                FlagDrop(id);
                 informPlayerLeave(id);
             } else {
                 players.Remove(id);
@@ -147,9 +154,9 @@ namespace CGGCTF
             --onlinePlayer;
         }
 
-        public void pickClass(int id, CTFClass cls)
+        public void PickClass(int id, CTFClass cls)
         {
-            Debug.Assert(playerExists(id));
+            Debug.Assert(PlayerExists(id));
             Debug.Assert(gameIsRunning);
             players[id].Class = cls;
             cls.CopyToPlayerData(players[id].Data);
@@ -157,9 +164,9 @@ namespace CGGCTF
             setInventory(id);
         }
 
-        public void getFlag(int id)
+        public void GetFlag(int id)
         {
-            Debug.Assert(playerExists(id));
+            Debug.Assert(PlayerExists(id));
             if (players[id].Team == CTFTeam.Red) {
                 if (!blueFlagHeld) {
                     announceGetFlag(id);
@@ -173,9 +180,9 @@ namespace CGGCTF
             }
         }
 
-        public void captureFlag(int id)
+        public void CaptureFlag(int id)
         {
-            Debug.Assert(playerExists(id));
+            Debug.Assert(PlayerExists(id));
             if (players[id].Team == CTFTeam.Red) {
                 if (blueFlagHolder == id) {
                     blueFlagHolder = -1;
@@ -191,12 +198,12 @@ namespace CGGCTF
             }
 
             if (checkEndgame())
-                endGame();
+                EndGame();
         }
 
-        public void flagDrop(int id)
+        public void FlagDrop(int id)
         {
-            Debug.Assert(playerExists(id));
+            Debug.Assert(PlayerExists(id));
             if (players[id].Team == CTFTeam.Red) {
                 if (blueFlagHolder == id) {
                     announceFlagDrop(id);
@@ -210,17 +217,17 @@ namespace CGGCTF
             }
         }
 
-        public void nextPhase()
+        public void NextPhase()
         {
             if (gamePhase == CTFPhase.Lobby)
-                startGame();
+                StartGame();
             else if (gamePhase == CTFPhase.Preparation)
-                startCombat();
+                StartCombat();
             else if (gamePhase == CTFPhase.Combat)
-                endGame();
+                EndGame();
         }
 
-        public void startGame()
+        public void StartGame()
         {
             Debug.Assert(gamePhase == CTFPhase.Lobby);
             gamePhase = CTFPhase.Preparation;
@@ -234,7 +241,7 @@ namespace CGGCTF
 
         }
 
-        public void startCombat()
+        public void StartCombat()
         {
             Debug.Assert(gamePhase == CTFPhase.Preparation);
             gamePhase = CTFPhase.Combat;
@@ -246,7 +253,7 @@ namespace CGGCTF
             }
         }
 
-        public void endGame()
+        public void EndGame()
         {
             Debug.Assert(gameIsRunning);
             gamePhase = CTFPhase.Ended;
@@ -268,109 +275,109 @@ namespace CGGCTF
 
         void decidePositions()
         {
-            cb.decidePositions();
+            cb.DecidePositions();
         }
 
         void setTeam(int id)
         {
-            Debug.Assert(playerExists(id));
-            cb.setTeam(id, players[id].Team);
+            Debug.Assert(PlayerExists(id));
+            cb.SetTeam(id, players[id].Team);
         }
 
         void setPvP(int id)
         {
-            Debug.Assert(playerExists(id));
-            cb.setPvP(id, isPvPPhase);
+            Debug.Assert(PlayerExists(id));
+            cb.SetPvP(id, isPvPPhase);
         }
 
         void setInventory(int id)
         {
-            Debug.Assert(playerExists(id));
+            Debug.Assert(PlayerExists(id));
             Debug.Assert(players[id].PickedClass);
-            cb.setInventory(id, players[id].Data);
+            cb.SetInventory(id, players[id].Data);
         }
 
         void saveInventory(int id)
         {
-            Debug.Assert(playerExists(id));
+            Debug.Assert(PlayerExists(id));
             Debug.Assert(players[id].PickedClass);
-            PlayerData toSave = cb.saveInventory(id);
+            PlayerData toSave = cb.SaveInventory(id);
             players[id].Data = toSave;
         }
 
         void warpToSpawn(int id)
         {
-            Debug.Assert(playerExists(id));
-            cb.warpToSpawn(id, players[id].Team);
+            Debug.Assert(PlayerExists(id));
+            cb.WarpToSpawn(id, players[id].Team);
         }
 
         void informPlayerJoin(int id)
         {
-            Debug.Assert(playerExists(id));
-            cb.informPlayerJoin(id, players[id].Team);
+            Debug.Assert(PlayerExists(id));
+            cb.InformPlayerJoin(id, players[id].Team);
         }
 
         void informPlayerRejoin(int id)
         {
-            Debug.Assert(playerExists(id));
-            cb.informPlayerRejoin(id, players[id].Team);
+            Debug.Assert(PlayerExists(id));
+            cb.InformPlayerRejoin(id, players[id].Team);
         }
 
         void informPlayerLeave(int id)
         {
-            Debug.Assert(playerExists(id));
-            cb.informPlayerLeave(id, players[id].Team);
+            Debug.Assert(PlayerExists(id));
+            cb.InformPlayerLeave(id, players[id].Team);
         }
 
         void announceGetFlag(int id)
         {
-            Debug.Assert(playerExists(id));
-            cb.announceGetFlag(id, players[id].Team);
+            Debug.Assert(PlayerExists(id));
+            cb.AnnounceGetFlag(id, players[id].Team);
         }
 
         void announceCaptureFlag(int id)
         {
-            Debug.Assert(playerExists(id));
-            cb.announceCaptureFlag(id, players[id].Team, redScore, blueScore);
+            Debug.Assert(PlayerExists(id));
+            cb.AnnounceCaptureFlag(id, players[id].Team, redScore, blueScore);
         }
 
         void announceFlagDrop(int id)
         {
-            Debug.Assert(playerExists(id));
-            cb.announceFlagDrop(id, players[id].Team);
+            Debug.Assert(PlayerExists(id));
+            cb.AnnounceFlagDrop(id, players[id].Team);
         }
 
         void announceGameStart()
         {
-            cb.announceGameStart();
+            cb.AnnounceGameStart();
         }
 
         void announceCombatStart()
         {
-            cb.announceCombatStart();
+            cb.AnnounceCombatStart();
         }
 
         void announceGameEnd(CTFTeam winner)
         {
-            cb.announceGameEnd(winner, redScore, blueScore);
+            cb.AnnounceGameEnd(winner, redScore, blueScore);
         }
 
         void tellPlayerTeam(int id)
         {
-            Debug.Assert(playerExists(id));
-            cb.tellPlayerTeam(id, players[id].Team);
+            Debug.Assert(PlayerExists(id));
+            cb.TellPlayerTeam(id, players[id].Team);
         }
 
         void tellPlayerSelectClass(int id)
         {
-            Debug.Assert(playerExists(id));
-            cb.tellPlayerSelectClass(id);
+            Debug.Assert(PlayerExists(id));
+            cb.TellPlayerSelectClass(id);
         }
 
         void tellPlayerCurrentClass(int id)
         {
-            Debug.Assert(playerExists(id));
-            cb.tellPlayerCurrentClass(id, players[id].Class.Name);
+            Debug.Assert(PlayerExists(id));
+            cb.TellPlayerCurrentClass(id, players[id].Class.Name);
         }
 
         #endregion
