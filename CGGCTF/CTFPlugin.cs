@@ -118,15 +118,15 @@ namespace CGGCTF
         void displayTime()
         {
             var ss = new StringBuilder();
-            ss.Append("{0} phase".SFormat(ctf.gamePhase == CTFPhase.Preparation ? "Preparation" : "Combat"));
+            ss.Append("{0} phase".SFormat(ctf.Phase == CTFPhase.Preparation ? "Preparation" : "Combat"));
             ss.Append("\nTime left - {0}:{1:d2}".SFormat(timeLeft / 60, timeLeft % 60));
             ss.Append("\n");
-            ss.Append("\nRed | {0} - {1} | Blue".SFormat(ctf.redScore, ctf.blueScore));
+            ss.Append("\nRed | {0} - {1} | Blue".SFormat(ctf.RedScore, ctf.BlueScore));
             ss.Append("\n");
-            if (ctf.blueFlagHeld)
-                ss.Append("\n{0} has blue flag.".SFormat(TShock.Players[revID[ctf.blueFlagHolder]].Name));
-            if (ctf.redFlagHeld)
-                ss.Append("\n{0} has red flag.".SFormat(TShock.Players[revID[ctf.redFlagHolder]].Name));
+            if (ctf.BlueFlagHeld)
+                ss.Append("\n{0} has blue flag.".SFormat(TShock.Players[revID[ctf.BlueFlagHolder]].Name));
+            if (ctf.RedFlagHeld)
+                ss.Append("\n{0} has red flag.".SFormat(TShock.Players[revID[ctf.RedFlagHolder]].Name));
 
             for (int i = 0; i < 50; ++i)
                 ss.Append("\n");
@@ -216,14 +216,12 @@ namespace CGGCTF
         {
             var ix = args.PlayerId;
             var tplr = TShock.Players[ix];
-            if (!tplr.IsLoggedIn)
-                return;
-            var id = tplr.User.ID;
+            var id = tplr.IsLoggedIn ? tplr.User.ID : -1;
 
             int x = (int)Math.Round(args.Position.X / 16);
             int y = (int)Math.Round(args.Position.Y / 16);
 
-            if (!ctf.gameIsRunning || !ctf.PlayerExists(id))
+            if (!ctf.GameIsRunning || !ctf.PlayerExists(id))
                 return;
 
             if (ctf.GetPlayerTeam(id) == CTFTeam.Red) {
@@ -243,7 +241,7 @@ namespace CGGCTF
         {
             var ix = args.PlayerId;
             var tplr = TShock.Players[ix];
-            var id = tplr.User.ID;
+            var id = tplr.IsLoggedIn ? tplr.User.ID : -1;
 
             if (ctf.PlayerExists(id))
                 ctf.FlagDrop(id);
@@ -262,7 +260,7 @@ namespace CGGCTF
                 return;
 
             var id = tplr.User.ID;
-            if (!ctf.PlayerExists(id) || !ctf.gameIsRunning)
+            if (!ctf.PlayerExists(id) || !ctf.GameIsRunning)
                 return;
 
             if (spawnPlayer(id, ctf.GetPlayerTeam(id)))
@@ -286,10 +284,10 @@ namespace CGGCTF
             var ix = tplr.Index;
             var id = tplr.User.ID;
 
-            if (!ctf.gameIsRunning || !ctf.PlayerExists(id)) {
+            if (!ctf.GameIsRunning || !ctf.PlayerExists(id)) {
                 tplr.Teleport(Main.spawnTileX * 16, Main.spawnTileY * 16);
                 tplr.SendSuccessMessage("Warped to spawn point.");
-            } else if (ctf.isPvPPhase) {
+            } else if (ctf.IsPvPPhase) {
                 tplr.SendErrorMessage("You can't warp to spawn now!");
             } else {
                 spawnPlayer(id, ctf.GetPlayerTeam(id));
@@ -324,7 +322,7 @@ namespace CGGCTF
             if (className == "list") {
                 // TODO - class list
             } else {
-                if (!ctf.gameIsRunning) {
+                if (!ctf.GameIsRunning) {
                     tplr.SendErrorMessage("The game hasn't started yet!");
                     return;
                 }

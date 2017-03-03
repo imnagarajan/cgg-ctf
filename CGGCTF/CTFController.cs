@@ -14,38 +14,38 @@ namespace CGGCTF
         CTFCallback cb;
 
         Dictionary<int, CTFPlayer> players;
-        public CTFPhase gamePhase { get; private set; }
-        public bool gameIsRunning {
+        public CTFPhase Phase { get; private set; }
+        public bool GameIsRunning {
             get {
-                return gamePhase != CTFPhase.Lobby && gamePhase != CTFPhase.Ended;
+                return Phase != CTFPhase.Lobby && Phase != CTFPhase.Ended;
             }
         }
-        public bool isPvPPhase {
+        public bool IsPvPPhase {
             get {
-                return gamePhase == CTFPhase.Combat;
-            }
-        }
-
-        public int totalPlayer { get; private set; } = 0;
-        public int onlinePlayer { get; private set; } = 0;
-        public int redPlayer { get; private set; } = 0;
-        public int bluePlayer { get; private set; } = 0;
-
-        public int redFlagHolder { get; private set; } = -1;
-        public int blueFlagHolder { get; private set; } = -1;
-        public bool redFlagHeld {
-            get {
-                return redFlagHolder != -1;
-            }
-        }
-        public bool blueFlagHeld {
-            get {
-                return blueFlagHolder != -1;
+                return Phase == CTFPhase.Combat;
             }
         }
 
-        public int redScore { get; private set; } = 0;
-        public int blueScore { get; private set; } = 0;
+        public int TotalPlayer { get; private set; } = 0;
+        public int OnlinePlayer { get; private set; } = 0;
+        public int RedPlayer { get; private set; } = 0;
+        public int BluePlayer { get; private set; } = 0;
+
+        public int RedFlagHolder { get; private set; } = -1;
+        public int BlueFlagHolder { get; private set; } = -1;
+        public bool RedFlagHeld {
+            get {
+                return RedFlagHolder != -1;
+            }
+        }
+        public bool BlueFlagHeld {
+            get {
+                return BlueFlagHolder != -1;
+            }
+        }
+
+        public int RedScore { get; private set; } = 0;
+        public int BlueScore { get; private set; } = 0;
 
         #endregion
 
@@ -74,7 +74,7 @@ namespace CGGCTF
 
         bool checkEndgame()
         {
-            return (Math.Abs(redScore - blueScore) >= 2);
+            return (Math.Abs(RedScore - BlueScore) >= 2);
         }
 
         void assignTeam(int id)
@@ -82,20 +82,20 @@ namespace CGGCTF
             if (players[id].Team != CTFTeam.None)
                 return;
 
-            if (redPlayer < bluePlayer) {
+            if (RedPlayer < BluePlayer) {
                 players[id].Team = CTFTeam.Red;
-                ++redPlayer;
-            } else if (bluePlayer < redPlayer) {
+                ++RedPlayer;
+            } else if (BluePlayer < RedPlayer) {
                 players[id].Team = CTFTeam.Blue;
-                ++bluePlayer;
+                ++BluePlayer;
             } else {
                 int randnum = CTFUtils.Random(2);
                 if (randnum == 0) {
                     players[id].Team = CTFTeam.Red;
-                    ++redPlayer;
+                    ++RedPlayer;
                 } else {
                     players[id].Team = CTFTeam.Blue;
-                    ++bluePlayer;
+                    ++BluePlayer;
                 }
             }
         }
@@ -124,40 +124,40 @@ namespace CGGCTF
             Debug.Assert(!PlayerExists(id));
             players[id] = new CTFPlayer();
             informPlayerJoin(id);
-            if (gameIsRunning)
+            if (GameIsRunning)
                 getPlayerStarted(id);
-            ++totalPlayer;
-            ++onlinePlayer;
+            ++TotalPlayer;
+            ++OnlinePlayer;
         }
 
         public void RejoinGame(int id)
         {
             Debug.Assert(PlayerExists(id));
-            Debug.Assert(gameIsRunning);
+            Debug.Assert(GameIsRunning);
             informPlayerRejoin(id);
             getPlayerStarted(id);
-            ++onlinePlayer;
+            ++OnlinePlayer;
         }
 
         public void LeaveGame(int id)
         {
             Debug.Assert(PlayerExists(id));
-            if (gameIsRunning) {
+            if (GameIsRunning) {
                 if (players[id].PickedClass)
                     saveInventory(id);
                 FlagDrop(id);
                 informPlayerLeave(id);
             } else {
                 players.Remove(id);
-                --totalPlayer;
+                --TotalPlayer;
             }
-            --onlinePlayer;
+            --OnlinePlayer;
         }
 
         public void PickClass(int id, CTFClass cls)
         {
             Debug.Assert(PlayerExists(id));
-            Debug.Assert(gameIsRunning);
+            Debug.Assert(GameIsRunning);
             players[id].Class = cls;
             cls.CopyToPlayerData(players[id].Data);
             tellPlayerCurrentClass(id);
@@ -168,14 +168,14 @@ namespace CGGCTF
         {
             Debug.Assert(PlayerExists(id));
             if (players[id].Team == CTFTeam.Red) {
-                if (!blueFlagHeld) {
+                if (!BlueFlagHeld) {
                     announceGetFlag(id);
-                    blueFlagHolder = id;
+                    BlueFlagHolder = id;
                 }
             } else if (players[id].Team == CTFTeam.Blue) {
-                if (!redFlagHeld) {
+                if (!RedFlagHeld) {
                     announceGetFlag(id);
-                    redFlagHolder = id;
+                    RedFlagHolder = id;
                 }
             }
         }
@@ -184,15 +184,15 @@ namespace CGGCTF
         {
             Debug.Assert(PlayerExists(id));
             if (players[id].Team == CTFTeam.Red) {
-                if (blueFlagHolder == id) {
-                    blueFlagHolder = -1;
-                    ++redScore;
+                if (BlueFlagHolder == id) {
+                    BlueFlagHolder = -1;
+                    ++RedScore;
                     announceCaptureFlag(id);
                 }
             } else if (players[id].Team == CTFTeam.Blue) {
-                if (redFlagHolder == id) {
-                    redFlagHolder = -1;
-                    ++blueScore;
+                if (RedFlagHolder == id) {
+                    RedFlagHolder = -1;
+                    ++BlueScore;
                     announceCaptureFlag(id);
                 }
             }
@@ -205,32 +205,32 @@ namespace CGGCTF
         {
             Debug.Assert(PlayerExists(id));
             if (players[id].Team == CTFTeam.Red) {
-                if (blueFlagHolder == id) {
+                if (BlueFlagHolder == id) {
                     announceFlagDrop(id);
-                    blueFlagHolder = -1;
+                    BlueFlagHolder = -1;
                 }
             } else if (players[id].Team == CTFTeam.Blue) {
-                if (redFlagHolder == id) {
+                if (RedFlagHolder == id) {
                     announceFlagDrop(id);
-                    redFlagHolder = -1;
+                    RedFlagHolder = -1;
                 }
             }
         }
 
         public void NextPhase()
         {
-            if (gamePhase == CTFPhase.Lobby)
+            if (Phase == CTFPhase.Lobby)
                 StartGame();
-            else if (gamePhase == CTFPhase.Preparation)
+            else if (Phase == CTFPhase.Preparation)
                 StartCombat();
-            else if (gamePhase == CTFPhase.Combat)
+            else if (Phase == CTFPhase.Combat)
                 EndGame();
         }
 
         public void StartGame()
         {
-            Debug.Assert(gamePhase == CTFPhase.Lobby);
-            gamePhase = CTFPhase.Preparation;
+            Debug.Assert(Phase == CTFPhase.Lobby);
+            Phase = CTFPhase.Preparation;
             decidePositions();
             announceGameStart();
             foreach (var id in players.Keys) {
@@ -243,8 +243,8 @@ namespace CGGCTF
 
         public void StartCombat()
         {
-            Debug.Assert(gamePhase == CTFPhase.Preparation);
-            gamePhase = CTFPhase.Combat;
+            Debug.Assert(Phase == CTFPhase.Preparation);
+            Phase = CTFPhase.Combat;
             announceCombatStart();
             foreach (var id in players.Keys) {
                 var player = players[id];
@@ -255,16 +255,16 @@ namespace CGGCTF
 
         public void EndGame()
         {
-            Debug.Assert(gameIsRunning);
-            gamePhase = CTFPhase.Ended;
+            Debug.Assert(GameIsRunning);
+            Phase = CTFPhase.Ended;
 
             var win = CTFTeam.None;
-            if (redScore > blueScore)
+            if (RedScore > BlueScore)
                 win = CTFTeam.Red;
-            else if (blueScore > redScore)
+            else if (BlueScore > RedScore)
                 win = CTFTeam.Blue;
-            else if (redFlagHeld != blueFlagHeld)
-                win = redFlagHeld ? CTFTeam.Blue : CTFTeam.Red;
+            else if (RedFlagHeld != BlueFlagHeld)
+                win = RedFlagHeld ? CTFTeam.Blue : CTFTeam.Red;
 
             announceGameEnd(win);
         }
@@ -287,7 +287,7 @@ namespace CGGCTF
         void setPvP(int id)
         {
             Debug.Assert(PlayerExists(id));
-            cb.SetPvP(id, isPvPPhase);
+            cb.SetPvP(id, IsPvPPhase);
         }
 
         void setInventory(int id)
@@ -338,7 +338,7 @@ namespace CGGCTF
         void announceCaptureFlag(int id)
         {
             Debug.Assert(PlayerExists(id));
-            cb.AnnounceCaptureFlag(id, players[id].Team, redScore, blueScore);
+            cb.AnnounceCaptureFlag(id, players[id].Team, RedScore, BlueScore);
         }
 
         void announceFlagDrop(int id)
@@ -359,7 +359,7 @@ namespace CGGCTF
 
         void announceGameEnd(CTFTeam winner)
         {
-            cb.AnnounceGameEnd(winner, redScore, blueScore);
+            cb.AnnounceGameEnd(winner, RedScore, BlueScore);
         }
 
         void tellPlayerTeam(int id)
