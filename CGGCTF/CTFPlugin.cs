@@ -23,8 +23,8 @@ namespace CGGCTF
         public CTFPlugin(Main game) : base(game) { }
 
         // separate stuffs for readability
-        CTFTileSystem tiles;
-        CTFPvPControl pvp;
+        CTFTileSystem tiles = new CTFTileSystem();
+        CTFPvPControl pvp = new CTFPvPControl();
 
         // ctf game controller
         CTFController ctf;
@@ -84,11 +84,6 @@ namespace CGGCTF
 
         void onInitialize(EventArgs args)
         {
-            #region Separate controls
-            tiles = new CTFTileSystem();
-            pvp = new CTFPvPControl();
-            #endregion
-
             #region CTF stuffs
             ctf = new CTFController(getCallback());
             classes = new CTFClassManager();
@@ -249,8 +244,6 @@ namespace CGGCTF
 
         void onSpawn(object sender, GetDataHandlers.SpawnEventArgs args)
         {
-            // TODO - this has to be fixed, really fixed
-
             if (args.Handled)
                 return;
 
@@ -263,8 +256,7 @@ namespace CGGCTF
             if (!ctf.PlayerExists(id) || !ctf.GameIsRunning)
                 return;
 
-            if (spawnPlayer(id, ctf.GetPlayerTeam(id)))
-                args.Handled = true;
+            spawnPlayer(id, ctf.GetPlayerTeam(id));
         }
 
         void onSendData(SendDataEventArgs args)
