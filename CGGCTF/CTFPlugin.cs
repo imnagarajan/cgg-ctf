@@ -34,6 +34,13 @@ namespace CGGCTF
         // player inventory
         PlayerData[] originalChar = new PlayerData[256];
         Dictionary<int, int> revID = new Dictionary<int, int>(); // user ID to index lookup
+        bool[] hatForce = new bool[256];
+        Item[] originalHat = new Item[256];
+        const int crownSlot = 10;
+        const int crownNetSlot = 69;
+        const int armorHeadSlot = 0;
+        const int armorHeadNetSlot = 59;
+        const int crownID = Terraria.ID.ItemID.GoldCrown;
 
         // time stuffs
         Timer timer;
@@ -58,6 +65,7 @@ namespace CGGCTF
             GetDataHandlers.KillMe += onDeath;
             GetDataHandlers.PlayerSpawn += onSpawn;
             ServerApi.Hooks.NetSendData.Register(this, onSendData);
+            GetDataHandlers.PlayerSlot += onSlot;
 
             GetDataHandlers.TileEdit += onTileEdit;
             GetDataHandlers.PlayerTeam += pvp.PlayerTeamHook;
@@ -77,6 +85,7 @@ namespace CGGCTF
                 GetDataHandlers.KillMe -= onDeath;
                 GetDataHandlers.PlayerSpawn -= onSpawn;
                 ServerApi.Hooks.NetSendData.Deregister(this, onSendData);
+                GetDataHandlers.PlayerSlot -= onSlot;
 
                 GetDataHandlers.TileEdit -= onTileEdit;
                 GetDataHandlers.PlayerTeam -= pvp.PlayerTeamHook;
@@ -155,6 +164,7 @@ namespace CGGCTF
             tplr.PlayerData = originalChar[ix];
             TShock.CharacterDB.InsertPlayerData(tplr);
 
+            hatForce[ix] = false;
             tplr.IsLoggedIn = false;
 
             var pdata = new PlayerData(tplr);
@@ -208,7 +218,7 @@ namespace CGGCTF
             if (ctf.GameIsRunning && ctf.PlayerExists(id)) {
                 ctf.FlagDrop(id);
                 if (args.Pvp) {
-                    var item = TShock.Utils.GetItemByName("Restoration Potion").First();
+                    var item = TShock.Utils.GetItemById(Terraria.ID.ItemID.RestorationPotion);
                     tplr.GiveItem(item.type, item.name, item.width, item.height, 1, 0);
                 }
             }
@@ -273,6 +283,29 @@ namespace CGGCTF
                     || (args.EditData == tiles.blueBlock && (!tiles.InBlueSide(args.X) || team != CTFTeam.Blue))) {
                     tiles.SetTile(args.X, args.Y, tiles.grayBlock);
                     sendTile();
+                }
+            }
+        }
+
+        void onSlot(object sender, GetDataHandlers.PlayerSlotEventArgs args)
+        {
+            int ix = args.PlayerId;
+            var tplr = TShock.Players[ix];
+
+            if (!tplr.Active)
+                return;
+
+            if (args.Slot == crownNetSlot) {
+                if (hatForce[ix]) {
+                    sendHeadVanity(tplr);
+                    args.Handled = true;
+                } else if (args.Type == crownID) {
+                    sendHeadVanity(tplr);
+                    args.Handled = true;
+                }
+            } else if (args.Slot == armorHeadNetSlot) {
+                if (args.Type == crownID) {
+                    sendArmorHead(tplr);
                 }
             }
         }
@@ -539,7 +572,7 @@ namespace CGGCTF
             cb.AnnounceGetFlag = delegate (int id, CTFTeam team) {
                 Debug.Assert(team != CTFTeam.None);
                 var tplr = TShock.Players[revID[id]];
-                // TODO - add crown to head
+                addCrown(tplr);
                 displayTime();
                 if (team == CTFTeam.Red) {
                     tiles.RemoveBlueFlag();
@@ -552,7 +585,7 @@ namespace CGGCTF
             cb.AnnounceCaptureFlag = delegate (int id, CTFTeam team, int redScore, int blueScore) {
                 Debug.Assert(team != CTFTeam.None);
                 var tplr = TShock.Players[revID[id]];
-                // TODO - remove crown from head
+                removeCrown(tplr);
                 displayTime();
                 if (team == CTFTeam.Red) {
                     tiles.AddBlueFlag();
@@ -566,7 +599,7 @@ namespace CGGCTF
             cb.AnnounceFlagDrop = delegate (int id, CTFTeam team) {
                 Debug.Assert(team != CTFTeam.None);
                 var tplr = TShock.Players[revID[id]];
-                // TODO - remove crown from head
+                removeCrown(tplr);
                 displayTime();
                 if (team == CTFTeam.Red) {
                     tiles.AddBlueFlag();
@@ -632,6 +665,40 @@ namespace CGGCTF
                 shutdown();
             else
                 ctf.NextPhase();
+        }
+
+        void addCrown(TSPlayer tplr)
+        {
+            var ix = tplr.Index;
+
+            hatForce[ix] = true;
+            originalHat[ix] = tplr.TPlayer.armor[crownSlot];
+
+            var crown = TShock.Utils.GetItemById(crownID);
+            tplr.TPlayer.armor[crownSlot] = crown;
+            sendHeadVanity(tplr);
+        }
+
+        void removeCrown(TSPlayer tplr)
+        {
+            var ix = tplr.Index;
+            hatForce[ix] = false;
+            tplr.TPlayer.armor[crownSlot] = originalHat[ix];
+            sendHeadVanity(tplr);
+        }
+
+        void sendHeadVanity(TSPlayer tplr)
+        {
+            var ix = tplr.Index;
+            var item = tplr.TPlayer.armor[crownSlot];
+            TSPlayer.All.SendData(PacketTypes.PlayerSlot, "", ix, crownNetSlot, item.prefix, item.stack, item.netID);
+        }
+
+        void sendArmorHead(TSPlayer tplr)
+        {
+            var ix = tplr.Index;
+            var item = tplr.TPlayer.armor[armorHeadSlot];
+            TSPlayer.All.SendData(PacketTypes.PlayerSlot, "", ix, armorHeadNetSlot, item.prefix, item.stack, item.netID);
         }
 
         #endregion
