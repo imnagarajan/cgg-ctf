@@ -38,6 +38,7 @@ namespace CGGCTF
         // time stuffs
         Timer timer;
         int timeLeft;
+        int waitTime = 61;
         int prepTime = 60 * 5;
         int combatTime = 60 * 15;
         
@@ -278,10 +279,18 @@ namespace CGGCTF
 
         #region Timer Display
 
-        void displayTime()
+        string lastDisplay = null;
+        void displayTime(string phase = null)
         {
+            if (phase == null) {
+                if (lastDisplay != null)
+                    phase = lastDisplay;
+                else
+                    return;
+            }
+
             var ss = new StringBuilder();
-            ss.Append("{0} phase".SFormat(ctf.Phase == CTFPhase.Preparation ? "Preparation" : "Combat"));
+            ss.Append("{0} phase".SFormat(phase));
             ss.Append("\nTime left - {0}:{1:d2}".SFormat(timeLeft / 60, timeLeft % 60));
             ss.Append("\n");
             ss.Append("\nRed | {0} - {1} | Blue".SFormat(ctf.RedScore, ctf.BlueScore));
@@ -299,6 +308,7 @@ namespace CGGCTF
             ss.Append("\nctf");
 
             TSPlayer.All.SendData(PacketTypes.Status, ss.ToString(), 0);
+            lastDisplay = phase;
         }
 
         void displayBlank()
@@ -314,11 +324,21 @@ namespace CGGCTF
         {
             if (timeLeft > 0) {
                 --timeLeft;
-                displayTime();
-                if (timeLeft == 0) {
+                if (timeLeft == 0)
                     ctf.NextPhase();
-                } else if (timeLeft == 60) {
-                    announceMessage("One minute left for current phase.");
+                if (ctf.Phase == CTFPhase.Lobby) {
+                    if (timeLeft == 60 || timeLeft == 30)
+                        announceWarning("Game will start in {0} seconds.", timeLeft);
+                } else if (ctf.Phase == CTFPhase.Preparation) {
+                    displayTime("Preparation");
+                    if (timeLeft == 60)
+                        announceWarning("One minute left for preparation phase.");
+                } else if (ctf.Phase == CTFPhase.Combat) {
+                    displayTime("Combat");
+                    if (timeLeft == 60 * 5)
+                        announceWarning("Five minutes left for combat phase.");
+                    else if (timeLeft == 60)
+                        announceWarning("One minute left for combat phase.");
                 }
             }
         }
@@ -426,6 +446,11 @@ namespace CGGCTF
             TSPlayer.All.SendInfoMessage(msg, args);
         }
 
+        void announceWarning(string msg, params object[] args)
+        {
+            TSPlayer.All.SendWarningMessage(msg, args);
+        }
+
         void announceScore(int red, int blue)
         {
             announceMessage("Current Score | Red {0} - {1} Blue", red, blue);
@@ -485,6 +510,8 @@ namespace CGGCTF
                     announceBlueMessage("{0} joined the blue team!", tplr.Name);
                 else
                     announceMessage("{0} joined the game.", tplr.Name);
+                if (ctf.Phase == CTFPhase.Lobby && ctf.OnlinePlayer >= 1)
+                    timeLeft = waitTime;
             };
             cb.InformPlayerRejoin = delegate (int id, CTFTeam team) {
                 Debug.Assert(team != CTFTeam.None);

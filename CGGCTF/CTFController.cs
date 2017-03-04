@@ -102,7 +102,6 @@ namespace CGGCTF
 
         void getPlayerStarted(int id)
         {
-            assignTeam(id);
             setTeam(id);
             setPvP(id);
             tellPlayerTeam(id);
@@ -123,11 +122,15 @@ namespace CGGCTF
         {
             Debug.Assert(!PlayerExists(id));
             players[id] = new CTFPlayer();
-            informPlayerJoin(id);
-            if (GameIsRunning)
-                getPlayerStarted(id);
             ++TotalPlayer;
             ++OnlinePlayer;
+            if (GameIsRunning) {
+                assignTeam(id);
+                informPlayerJoin(id);
+                getPlayerStarted(id);
+            } else {
+                informPlayerJoin(id);
+            }
         }
 
         public void RejoinGame(int id)
@@ -236,6 +239,7 @@ namespace CGGCTF
             foreach (var id in players.Keys) {
                 var player = players[id];
                 Debug.Assert(player.Team == CTFTeam.None);
+                assignTeam(id);
                 getPlayerStarted(id);
             }
 
