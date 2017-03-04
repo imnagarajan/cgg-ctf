@@ -41,6 +41,8 @@ namespace CGGCTF
         int waitTime = 61;
         int prepTime = 60 * 5;
         int combatTime = 60 * 15;
+        int shutdownTime = 30;
+        int minPlayerToStart = 2;
         
         #region Initialization
 
@@ -324,8 +326,10 @@ namespace CGGCTF
         {
             if (timeLeft > 0) {
                 --timeLeft;
+
                 if (timeLeft == 0)
-                    ctf.NextPhase();
+                    nextPhase();
+
                 if (ctf.Phase == CTFPhase.Lobby) {
                     if (timeLeft == 60 || timeLeft == 30)
                         announceWarning("Game will start in {0} seconds.", timeLeft);
@@ -339,6 +343,9 @@ namespace CGGCTF
                         announceWarning("Five minutes left for combat phase.");
                     else if (timeLeft == 60)
                         announceWarning("One minute left for combat phase.");
+                } else if (ctf.Phase == CTFPhase.Ended) {
+                    if (timeLeft == 20 || timeLeft == 10)
+                        announceWarning("Server will shut down in {0} seconds.", timeLeft);
                 }
             }
         }
@@ -415,7 +422,7 @@ namespace CGGCTF
 
         void cmdSkip(CommandArgs args)
         {
-            ctf.NextPhase();
+            nextPhase();
         }
 
         #endregion 
@@ -510,7 +517,7 @@ namespace CGGCTF
                     announceBlueMessage("{0} joined the blue team!", tplr.Name);
                 else
                     announceMessage("{0} joined the game.", tplr.Name);
-                if (ctf.Phase == CTFPhase.Lobby && ctf.OnlinePlayer >= 1)
+                if (ctf.Phase == CTFPhase.Lobby && ctf.OnlinePlayer >= minPlayerToStart)
                     timeLeft = waitTime;
             };
             cb.InformPlayerRejoin = delegate (int id, CTFTeam team) {
@@ -583,8 +590,8 @@ namespace CGGCTF
                 timeLeft = combatTime;
             };
             cb.AnnounceGameEnd = delegate (CTFTeam winner, int redScore, int blueScore) {
-                timeLeft = 0;
                 displayBlank();
+                timeLeft = shutdownTime;
                 announceMessage("The game has ended with score of {0} - {1}.", redScore, blueScore);
                 if (winner == CTFTeam.Red)
                     announceRedMessage("Congratulations to red team!");
@@ -612,6 +619,19 @@ namespace CGGCTF
                 tplr.SendInfoMessage("Your class is {0}.", cls);
             };
             return cb;
+        }
+
+        void shutdown()
+        {
+            TShock.Utils.StopServer(false);
+        }
+
+        void nextPhase()
+        {
+            if (ctf.Phase == CTFPhase.Ended)
+                shutdown();
+            else
+                ctf.NextPhase();
         }
 
         #endregion
