@@ -110,42 +110,6 @@ namespace CGGCTF
             #endregion
         }
 
-        void displayTime()
-        {
-            var ss = new StringBuilder();
-            ss.Append("{0} phase".SFormat(ctf.Phase == CTFPhase.Preparation ? "Preparation" : "Combat"));
-            ss.Append("\nTime left - {0}:{1:d2}".SFormat(timeLeft / 60, timeLeft % 60));
-            ss.Append("\n");
-            ss.Append("\nRed | {0} - {1} | Blue".SFormat(ctf.RedScore, ctf.BlueScore));
-            ss.Append("\n");
-            if (ctf.BlueFlagHeld)
-                ss.Append("\n{0} has blue flag.".SFormat(TShock.Players[revID[ctf.BlueFlagHolder]].Name));
-            if (ctf.RedFlagHeld)
-                ss.Append("\n{0} has red flag.".SFormat(TShock.Players[revID[ctf.RedFlagHolder]].Name));
-
-            for (int i = 0; i < 50; ++i)
-                ss.Append("\n");
-            ss.Append("a");
-            for (int i = 0; i < 24; ++i)
-                ss.Append(" ");
-            ss.Append("\nctf");
-
-            TSPlayer.All.SendData(PacketTypes.Status, ss.ToString(), 0);
-        }
-
-        void onTime(object sender, ElapsedEventArgs args)
-        {
-            if (timeLeft > 0) {
-                --timeLeft;
-                displayTime();
-                if (timeLeft == 0) {
-                    ctf.NextPhase();
-                } else if (timeLeft == 60) {
-                    announceMessage("One minute left for current phase.");
-                }
-            }
-        }
-
         #endregion
 
         #region Basic Hooks
@@ -267,7 +231,7 @@ namespace CGGCTF
         void onSendData(SendDataEventArgs args)
         {
             if (args.MsgId == PacketTypes.Status
-                && !args.text.EndsWith("\nctf"))
+                && !args.text.EndsWith("ctf"))
                 args.Handled = true;
         }
 
@@ -306,6 +270,55 @@ namespace CGGCTF
                     || (args.EditData == tiles.blueBlock && (!tiles.InBlueSide(args.X) || team != CTFTeam.Blue))) {
                     tiles.SetTile(args.X, args.Y, tiles.grayBlock);
                     sendTile();
+                }
+            }
+        }
+
+        #endregion
+
+        #region Timer Display
+
+        void displayTime()
+        {
+            var ss = new StringBuilder();
+            ss.Append("{0} phase".SFormat(ctf.Phase == CTFPhase.Preparation ? "Preparation" : "Combat"));
+            ss.Append("\nTime left - {0}:{1:d2}".SFormat(timeLeft / 60, timeLeft % 60));
+            ss.Append("\n");
+            ss.Append("\nRed | {0} - {1} | Blue".SFormat(ctf.RedScore, ctf.BlueScore));
+            ss.Append("\n");
+            if (ctf.BlueFlagHeld)
+                ss.Append("\n{0} has blue flag.".SFormat(TShock.Players[revID[ctf.BlueFlagHolder]].Name));
+            if (ctf.RedFlagHeld)
+                ss.Append("\n{0} has red flag.".SFormat(TShock.Players[revID[ctf.RedFlagHolder]].Name));
+
+            for (int i = 0; i < 50; ++i)
+                ss.Append("\n");
+            ss.Append("a");
+            for (int i = 0; i < 24; ++i)
+                ss.Append(" ");
+            ss.Append("\nctf");
+
+            TSPlayer.All.SendData(PacketTypes.Status, ss.ToString(), 0);
+        }
+
+        void displayBlank()
+        {
+            var ss = new StringBuilder();
+            for (int i = 0; i < 60; ++i)
+                ss.Append("\n");
+            ss.Append("ctf");
+            TSPlayer.All.SendData(PacketTypes.Status, ss.ToString(), 0);
+        }
+
+        void onTime(object sender, ElapsedEventArgs args)
+        {
+            if (timeLeft > 0) {
+                --timeLeft;
+                displayTime();
+                if (timeLeft == 0) {
+                    ctf.NextPhase();
+                } else if (timeLeft == 60) {
+                    announceMessage("One minute left for current phase.");
                 }
             }
         }
@@ -544,6 +557,7 @@ namespace CGGCTF
             };
             cb.AnnounceGameEnd = delegate (CTFTeam winner, int redScore, int blueScore) {
                 timeLeft = 0;
+                displayBlank();
                 announceMessage("The game has ended with score of {0} - {1}.", redScore, blueScore);
                 if (winner == CTFTeam.Red)
                     announceRedMessage("Congratulations to red team!");
