@@ -45,17 +45,19 @@ namespace CGGCTF
         // time stuffs
         Timer timer;
         int timeLeft;
-        int waitTime = 61;
-        int prepTime = 60 * 5;
-        int combatTime = 60 * 15;
-        int shutdownTime = 30;
-        int minPlayerToStart = 2;
+        int waitTime { get { return CTFConfig.WaitTime; } }
+        int prepTime { get { return CTFConfig.PrepTime; } }
+        int combatTime { get { return CTFConfig.CombatTime; } }
+        int shutdownTime { get { return CTFConfig.ShutdownTime;  } }
+        int minPlayerToStart { get { return CTFConfig.MinPlayerToStart; } }
         
         #region Initialization
 
         public override void Initialize()
         {
             ServerApi.Hooks.GameInitialize.Register(this, onInitialize);
+            GeneralHooks.ReloadEvent += onReload;
+
             ServerApi.Hooks.ServerJoin.Register(this, onJoin);
             PlayerHooks.PlayerPostLogin += onLogin;
             PlayerHooks.PlayerLogout += onLogout;
@@ -76,6 +78,8 @@ namespace CGGCTF
         {
             if (Disposing) {
                 ServerApi.Hooks.GameInitialize.Deregister(this, onInitialize);
+                GeneralHooks.ReloadEvent -= onReload;
+
                 ServerApi.Hooks.ServerJoin.Deregister(this, onJoin);
                 PlayerHooks.PlayerPostLogin -= onLogin;
                 PlayerHooks.PlayerLogout -= onLogout;
@@ -96,12 +100,16 @@ namespace CGGCTF
 
         void onInitialize(EventArgs args)
         {
+            CTFConfig.Read();
+            CTFConfig.Write();
+
             #region CTF stuffs
             ctf = new CTFController(getCallback());
             classes = new CTFClassManager();
             blankClass = new CTFClass();
             for (int i = 0; i < NetItem.MaxInventory; ++i)
                 blankClass.Inventory[i] = new NetItem(0, 0, 0);
+
             #endregion
 
             #region Time stuffs
@@ -120,6 +128,12 @@ namespace CGGCTF
             add(new Command("ctf.play", cmdClass, "class"));
             add(new Command("ctf.skip", cmdSkip, "skip"));
             #endregion
+        }
+
+        void onReload(ReloadEventArgs args)
+        {
+            CTFConfig.Read();
+            CTFConfig.Write();
         }
 
         #endregion
@@ -365,20 +379,18 @@ namespace CGGCTF
 
                 if (ctf.Phase == CTFPhase.Lobby) {
                     if (timeLeft == 60 || timeLeft == 30)
-                        announceWarning("Game will start in {0} seconds.", timeLeft);
+                        announceWarning("Game will start in {0}.", CTFUtils.TimeToString(timeLeft));
                 } else if (ctf.Phase == CTFPhase.Preparation) {
                     displayTime("Preparation");
                     if (timeLeft == 60)
-                        announceWarning("One minute left for preparation phase.");
+                        announceWarning("{0} left for preparation phase.", CTFUtils.TimeToString(timeLeft));
                 } else if (ctf.Phase == CTFPhase.Combat) {
                     displayTime("Combat");
-                    if (timeLeft == 60 * 5)
-                        announceWarning("Five minutes left for combat phase.");
-                    else if (timeLeft == 60)
-                        announceWarning("One minute left for combat phase.");
+                    if (timeLeft == 60 * 5 || timeLeft == 60)
+                        announceWarning("{0} left for combat phase.", CTFUtils.TimeToString(timeLeft));
                 } else if (ctf.Phase == CTFPhase.Ended) {
                     if (timeLeft == 20 || timeLeft == 10)
-                        announceWarning("Server will shut down in {0} seconds.", timeLeft);
+                        announceWarning("Server will shut down in {0}.", CTFUtils.TimeToString(timeLeft));
                 }
             }
         }
@@ -610,7 +622,8 @@ namespace CGGCTF
                 }
             };
             cb.AnnounceGameStart = delegate () {
-                announceMessage("The game has started! You have 5 minutes to prepare your base!");
+                announceMessage("The game has started! You have {0} to prepare your base!",
+                    CTFUtils.TimeToString(prepTime, false));
                 tiles.AddSpawns();
                 tiles.AddFlags();
                 tiles.AddMiddleBlock();

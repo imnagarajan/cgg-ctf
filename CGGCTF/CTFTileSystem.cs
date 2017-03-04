@@ -12,8 +12,8 @@ namespace CGGCTF
     {
         #region Variables
 
-        int flagDistance = 225;
-        int spawnDistance = 300;
+        int flagDistance { get { return CTFConfig.FlagDistance;  } }
+        int spawnDistance { get { return CTFConfig.SpawnDistance;  } }
 
         int mapMiddle {
             get {
@@ -49,7 +49,7 @@ namespace CGGCTF
             }
         }
 
-        int wallWidth = 10;
+        int wallWidth { get { return CTFConfig.WallWidth; } }
         int wallMiddle {
             get {
                 return Main.maxTilesX / 2;
