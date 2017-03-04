@@ -106,7 +106,7 @@ namespace CGGCTF
                 Commands.ChatCommands.RemoveAll(c2 => c2.Names.Exists(s2 => c.Names.Contains(s2)));
                 Commands.ChatCommands.Add(c);
             };
-            add(new Command("ctf.spawn", cmdSpawn, "spawn"));
+            add(new Command(Permissions.spawn, cmdSpawn, "spawn"));
             add(new Command("ctf.play", cmdJoin, "join"));
             add(new Command("ctf.play", cmdClass, "class"));
             add(new Command("ctf.skip", cmdSkip, "skip"));
@@ -517,7 +517,7 @@ namespace CGGCTF
                     announceBlueMessage("{0} joined the blue team!", tplr.Name);
                 else
                     announceMessage("{0} joined the game.", tplr.Name);
-                if (ctf.Phase == CTFPhase.Lobby && ctf.OnlinePlayer >= minPlayerToStart)
+                if (ctf.Phase == CTFPhase.Lobby && timeLeft == 0 && ctf.OnlinePlayer >= minPlayerToStart)
                     timeLeft = waitTime;
             };
             cb.InformPlayerRejoin = delegate (int id, CTFTeam team) {
