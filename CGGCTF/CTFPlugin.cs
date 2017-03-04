@@ -142,8 +142,17 @@ namespace CGGCTF
 
         void onJoin(JoinEventArgs args)
         {
+            var ix = args.Who;
+            var tplr = TShock.Players[ix];
+
             pvp.SetTeam(args.Who, TeamColor.White);
             pvp.SetPvP(args.Who, false);
+
+            if (!tplr.IsLoggedIn) {
+                var pdata = new PlayerData(tplr);
+                blankClass.CopyToPlayerData(pdata);
+                pdata.RestoreCharacter(tplr);
+            }
         }
 
         void onLogin(PlayerPostLoginEventArgs args)
@@ -161,7 +170,7 @@ namespace CGGCTF
             blankClass.CopyToPlayerData(pdata);
             pdata.RestoreCharacter(tplr);
 
-            // TODO - make joining player sees the message
+            // TODO - make joining player sees the message for auto-login
             if (ctf.PlayerExists(id))
                 ctf.RejoinGame(id);
         }
