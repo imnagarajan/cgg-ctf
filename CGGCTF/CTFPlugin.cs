@@ -238,8 +238,13 @@ namespace CGGCTF
             var tplr = TShock.Players[ix];
             var id = tplr.IsLoggedIn ? tplr.User.ID : -1;
 
-            if (ctf.PlayerExists(id))
+            if (ctf.GameIsRunning && ctf.PlayerExists(id)) {
                 ctf.FlagDrop(id);
+                if (args.Pvp) {
+                    var item = TShock.Utils.GetItemByName("Restoration Potion").First();
+                    tplr.GiveItem(item.type, item.name, item.width, item.height, 1, 0);
+                }
+            }
         }
 
         void onSpawn(object sender, GetDataHandlers.SpawnEventArgs args)
