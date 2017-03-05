@@ -76,10 +76,37 @@ namespace CGGCTF
             return classes;
         }
 
-        public CTFClass GetClass(string name)
+        public CTFClass GetClass(string name, bool caseSensitive = false)
         {
             List<CTFClass> classes = GetClasses();
-            return classes.FirstOrDefault(cls => cls.Name.ToLower() == name);
+            if (caseSensitive)
+                return classes.FirstOrDefault(cls => cls.Name == name);
+            else
+                return classes.FirstOrDefault(cls => cls.Name.ToLower() == name.ToLower());
+        }
+
+        public void SaveClass(CTFClass cls)
+        {
+            if (cls.ID == -1) {
+                try {
+                    db.Query("INSERT INTO ctfclasses (Name, Description, HP, " +
+                        "Mana, Inventory, Price, Hidden, Sell) " +
+                        "VALUES (@0, @1, @2, @3, @4, @5, @6, @7)",
+                        cls.Name, cls.Description, cls.HP, cls.Mana, string.Join("~", cls.Inventory),
+                        cls.Price, cls.Hidden ? 1 : 0, cls.Sell ? 1 : 0);
+                } catch (Exception ex) {
+                    TShock.Log.Error(ex.ToString());
+                }
+            } else {
+                try {
+                    db.Query("UPDATE ctfclasses SET Name = @0, Description = @1, HP = @2, " +
+                        "Mana = @3, Inventory = @4, Price = @5, Hidden = @6, Sell = @7 WHERE ID = @8",
+                        cls.Name, cls.Description, cls.HP, cls.Mana, string.Join("~", cls.Inventory),
+                        cls.Price, cls.Hidden ? 1 : 0, cls.Sell ? 1 : 0, cls.ID);
+                } catch (Exception ex) {
+                    TShock.Log.Error(ex.ToString());
+                }
+            }
         }
     }
 }

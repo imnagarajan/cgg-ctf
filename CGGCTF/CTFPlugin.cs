@@ -55,6 +55,9 @@ namespace CGGCTF
         // money
         string singular { get { return CTFConfig.MoneySingularName; } }
         string plural { get { return CTFConfig.MoneyPluralName; } }
+
+        // class editing
+        CTFClass[] editingClass = new CTFClass[256];
         
         #region Initialization
 
@@ -112,9 +115,6 @@ namespace CGGCTF
             ctf = new CTFController(getCallback());
             classes = new CTFClassManager();
             blankClass = new CTFClass();
-            for (int i = 0; i < NetItem.MaxInventory; ++i)
-                blankClass.Inventory[i] = new NetItem(0, 0, 0);
-
             #endregion
 
             #region Time stuffs
@@ -194,6 +194,7 @@ namespace CGGCTF
 
             hatForce[ix] = false;
             displayExcept[ix] = false;
+            editingClass[ix] = null;
             tplr.IsLoggedIn = false;
 
             var pdata = new PlayerData(tplr);
@@ -474,72 +475,288 @@ namespace CGGCTF
                 return;
             }
 
-            string className = string.Join(" ", args.Parameters).ToLower();
-            if (className == "list") {
+            switch (args.Parameters[0].ToLower()) {
 
-                if (displayExcept[ix]) {
-                    displayExcept[ix] = false;
-                    displayBlank(tplr);
-                    tplr.SendInfoMessage("Disabled class list display.");
-                    return;
-                }
+                #region /class list
+                case "list": {
 
-                var list = classes.GetClasses();
-                var bought = new StringBuilder();
-                var notyet = new StringBuilder();
-                foreach (var cls in list) {
-                    if (true) { // TODO - check whether player owns it
-                        bought.Append(string.Format("\n{0}: {1}",
-                            cls.Name, cls.Description));
-                    } else {
-                        notyet.Append(string.Format("\n{0}: {1} ({2})",
-                            cls.Name, cls.Description, cls.Price == 0
-                            ? "Free" : CTFUtils.Pluralize(cls.Price, singular, plural)));
+                        if (displayExcept[ix]) {
+                            displayExcept[ix] = false;
+                            displayBlank(tplr);
+                            tplr.SendInfoMessage("Disabled class list display.");
+                            return;
+                        }
+
+                        var list = classes.GetClasses();
+                        var bought = new StringBuilder();
+                        var notyet = new StringBuilder();
+                        foreach (var cls in list) {
+                            if (true) { // TODO - check whether player owns it
+                                bought.Append(string.Format("\n{0}: {1}",
+                                    cls.Name, cls.Description));
+                            } else {
+                                notyet.Append(string.Format("\n{0}: {1} ({2})",
+                                    cls.Name, cls.Description, cls.Price == 0
+                                    ? "Free" : CTFUtils.Pluralize(cls.Price, singular, plural)));
+                            }
+                        }
+
+                        var finalmsg = new StringBuilder();
+                        if (bought.Length != 0) {
+                            finalmsg.Append("- Classes you have -");
+                            finalmsg.Append(bought);
+                        }
+                        if (bought.Length != 0 && notyet.Length != 0)
+                            finalmsg.Append("\n\n");
+                        if (notyet.Length != 0) {
+                            finalmsg.Append("- Classes you do not have -");
+                            finalmsg.Append(notyet);
+                        }
+
+                        displayExcept[ix] = true;
+                        displayMessage(tplr, finalmsg);
+
+                        tplr.SendInfoMessage("Turn off your minimap to see class list.");
+                        tplr.SendInfoMessage("Type {0}class list again to turn off.", Commands.Specifier);
+
                     }
-                }
+                    break;
+                #endregion
 
-                var finalmsg = new StringBuilder();
-                if (bought.Length != 0) {
-                    finalmsg.Append("- Classes you have -");
-                    finalmsg.Append(bought);
-                }
-                if (bought.Length != 0 && notyet.Length != 0)
-                    finalmsg.Append("\n\n");
-                if (notyet.Length != 0) {
-                    finalmsg.Append("- Classes you do not have -");
-                    finalmsg.Append(notyet);
-                }
+                #region /class edit
+                case "edit": {
 
-                displayExcept[ix] = true;
-                displayMessage(tplr, finalmsg);
+                        if (!tplr.HasPermission("ctf.edit")) {
+                            tplr.SendErrorMessage("You don't have access to this command.");
+                            return;
+                        }
+                        if (ctf.Phase != CTFPhase.Lobby) {
+                            tplr.SendErrorMessage("You can only edit classes before game starts.");
+                            return;
+                        }
+                        if (editingClass[ix] != null) {
+                            tplr.SendErrorMessage("You are editing class {0} right now.", editingClass[ix].Name);
+                            tplr.SendErrorMessage("{0}class save or {0}class discard.", Commands.Specifier);
+                            return;
+                        }
 
-                tplr.SendInfoMessage("Turn off your minimap to see class list.");
-                tplr.SendInfoMessage("Type {0}class list again to turn off.", Commands.Specifier);
+                        if (args.Parameters.Count < 2) {
+                            tplr.SendErrorMessage("Usage: {0}class edit <name>", Commands.Specifier);
+                            return;
+                        }
 
-            } else {
+                        string className = string.Join(" ", args.Parameters.Skip(1));
+                        var cls = classes.GetClass(className);
+                        if (cls == null) {
+                            cls = blankClass;
+                            cls = new CTFClass() {
+                                Name = className
+                            };
+                            tplr.SendSuccessMessage("You are adding new class {0}.", cls.Name);
+                        } else {
+                            tplr.SendSuccessMessage("You may now start editing class {0}.", cls.Name);
+                        }
+                        tplr.SendInfoMessage("{0}class save when you're done.", Commands.Specifier);
+                        tplr.SendInfoMessage("{0}class cancel to cancel.", Commands.Specifier);
+                        tplr.SendInfoMessage("Also try: {0}class hp/mana/desc/name", Commands.Specifier);
 
-                if (!ctf.GameIsRunning) {
-                    tplr.SendErrorMessage("The game hasn't started yet!");
-                    return;
-                }
-                if (!ctf.PlayerExists(id)) {
-                    tplr.SendErrorMessage("You are not in the game!");
-                    return;
-                }
-                if (ctf.HasPickedClass(id)) {
-                    tplr.SendErrorMessage("You already picked a class!");
-                    return;
-                }
-                CTFClass cls = classes.GetClass(className);
-                if (cls == null) {
-                    tplr.SendErrorMessage("Class {0} doesn't exist. Try {1}class list.", className, Commands.Specifier);
-                    return;
-                }
+                        timeLeft = -1;
+                        cls.CopyToPlayerData(tplr.PlayerData);
+                        tplr.PlayerData.RestoreCharacter(tplr);
+                        editingClass[ix] = cls;
+                    }
+                    break;
+                #endregion
 
-                ctf.PickClass(id, cls);
-                displayExcept[ix] = false;
-                displayBlank(tplr);
-                // TODO - check if player owns it
+                #region /class save
+                case "save": {
+
+                        if (!tplr.HasPermission("ctf.edit")) {
+                            tplr.SendErrorMessage("You don't have access to this command.");
+                            return;
+                        }
+                        if (editingClass[ix] == null) {
+                            tplr.SendErrorMessage("You are not editing any classes right now.");
+                            return;
+                        }
+
+                        tplr.PlayerData.CopyCharacter(tplr);
+                        editingClass[ix].CopyFromPlayerData(tplr.PlayerData);
+                        classes.SaveClass(editingClass[ix]);
+
+                        blankClass.CopyToPlayerData(tplr.PlayerData);
+                        tplr.PlayerData.RestoreCharacter(tplr);
+
+                        tplr.SendSuccessMessage("Edited class {0}.", editingClass[ix].Name);
+                        editingClass[ix] = null;
+                        timeLeft = ctf.OnlinePlayer >= CTFConfig.MinPlayerToStart ? waitTime : 0;
+
+                    }
+                    break;
+                #endregion
+
+                #region /class cancel
+                case "discard":
+                case "cancel": {
+
+                        if (!tplr.HasPermission("ctf.edit")) {
+                            tplr.SendErrorMessage("You don't have access to this command.");
+                            return;
+                        }
+                        if (editingClass[ix] == null) {
+                            tplr.SendErrorMessage("You are not editing any classes right now.");
+                            return;
+                        }
+
+                        blankClass.CopyToPlayerData(tplr.PlayerData);
+                        tplr.PlayerData.RestoreCharacter(tplr);
+
+                        tplr.SendInfoMessage("Canceled editing class {0}.", editingClass[ix].Name);
+                        editingClass[ix] = null;
+                        timeLeft = ctf.OnlinePlayer >= CTFConfig.MinPlayerToStart ? waitTime : 0;
+
+                    }
+                    break;
+                #endregion
+
+                #region /class hp <amount>
+                case "hp": {
+
+                        if (!tplr.HasPermission("ctf.edit")) {
+                            tplr.SendErrorMessage("You don't have access to this command.");
+                            return;
+                        }
+                        if (editingClass[ix] == null) {
+                            tplr.SendErrorMessage("You are not editing any classes right now.");
+                            return;
+                        }
+                        if (args.Parameters.Count != 2) {
+                            tplr.SendErrorMessage("Usage: {0}class hp <amount>", Commands.Specifier);
+                            return;
+                        }
+                        int amount;
+                        if (!int.TryParse(args.Parameters[1], out amount)) {
+                            tplr.SendErrorMessage("Invalid HP amount.");
+                            return;
+                        }
+                        tplr.TPlayer.statLife = amount;
+                        tplr.TPlayer.statLifeMax = amount;
+                        tplr.SendSuccessMessage("Changed your HP to {0}.", amount);
+                        TSPlayer.All.SendData(PacketTypes.PlayerHp, "", ix, amount, amount);
+
+                    }
+                    break;
+                #endregion
+
+                #region /class mana <amount>
+                case "mp":
+                case "mana": {
+
+                        if (!tplr.HasPermission("ctf.edit")) {
+                            tplr.SendErrorMessage("You don't have access to this command.");
+                            return;
+                        }
+                        if (editingClass[ix] == null) {
+                            tplr.SendErrorMessage("You are not editing any classes right now.");
+                            return;
+                        }
+                        if (args.Parameters.Count != 2) {
+                            tplr.SendErrorMessage("Usage: {0}class mana <amount>", Commands.Specifier);
+                            return;
+                        }
+                        int amount;
+                        if (!int.TryParse(args.Parameters[1], out amount)) {
+                            tplr.SendErrorMessage("Invalid mana amount.");
+                            return;
+                        }
+                        tplr.TPlayer.statMana = amount;
+                        tplr.TPlayer.statManaMax = amount;
+                        tplr.SendSuccessMessage("Changed your mana to {0}.", amount);
+                        TSPlayer.All.SendData(PacketTypes.PlayerMana, "", ix, amount, amount);
+
+                    }
+                    break;
+                #endregion
+
+                #region /class desc <text>
+                case "desc": {
+
+                        if (!tplr.HasPermission("ctf.edit")) {
+                            tplr.SendErrorMessage("You don't have access to this command.");
+                            return;
+                        }
+                        if (editingClass[ix] == null) {
+                            tplr.SendErrorMessage("You are not editing any classes right now.");
+                            return;
+                        }
+                        if (args.Parameters.Count < 2) {
+                            tplr.SendErrorMessage("Usage: {0}class desc <text>", Commands.Specifier);
+                            return;
+                        }
+
+                        var text = string.Join(" ", args.Parameters.Skip(1));
+                        editingClass[ix].Description = text;
+                        tplr.SendSuccessMessage("Changed {0} description to:");
+                        tplr.SendInfoMessage(text);
+
+                    }
+                    break;
+                #endregion
+
+                #region /class name <text>
+                case "name": {
+
+                        if (!tplr.HasPermission("ctf.edit")) {
+                            tplr.SendErrorMessage("You don't have access to this command.");
+                            return;
+                        }
+                        if (editingClass[ix] == null) {
+                            tplr.SendErrorMessage("You are not editing any classes right now.");
+                            return;
+                        }
+                        if (args.Parameters.Count < 2) {
+                            tplr.SendErrorMessage("Usage: {0}class name <text>", Commands.Specifier);
+                            return;
+                        }
+
+                        var text = string.Join(" ", args.Parameters.Skip(1));
+                        tplr.SendSuccessMessage("Changed name of {0} to {1}.",
+                            editingClass[ix].Name, text);
+                        editingClass[ix].Name = text;
+
+                    }
+                    break;
+                #endregion
+
+                #region /class <name>
+                default: {
+
+                        string className = string.Join(" ", args.Parameters);
+                        if (!ctf.GameIsRunning) {
+                            tplr.SendErrorMessage("The game hasn't started yet!");
+                            return;
+                        }
+                        if (!ctf.PlayerExists(id)) {
+                            tplr.SendErrorMessage("You are not in the game!");
+                            return;
+                        }
+                        if (ctf.HasPickedClass(id)) {
+                            tplr.SendErrorMessage("You already picked a class!");
+                            return;
+                        }
+                        CTFClass cls = classes.GetClass(className);
+                        if (cls == null) {
+                            tplr.SendErrorMessage("Class {0} doesn't exist. Try {1}class list.", className, Commands.Specifier);
+                            return;
+                        }
+
+                        ctf.PickClass(id, cls);
+                        displayExcept[ix] = false;
+                        displayBlank(tplr);
+
+                    }
+                    break;
+                #endregion
 
             }
         }
@@ -549,7 +766,7 @@ namespace CGGCTF
             nextPhase();
         }
 
-        #endregion 
+        #endregion
 
         #region Messages
         void sendRedMessage(TSPlayer tplr, string msg, params object[] args)

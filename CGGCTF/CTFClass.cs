@@ -27,6 +27,8 @@ namespace CGGCTF
             HP = 100;
             Mana = 20;
             Inventory = new NetItem[NetItem.MaxInventory];
+            for (int i = 0; i < NetItem.MaxInventory; ++i)
+                Inventory[i] = new NetItem(0, 0, 0);
             Price = 0;
             Hidden = true;
             Sell = false;
@@ -39,6 +41,13 @@ namespace CGGCTF
             pd.mana = Mana;
             pd.maxMana = Mana;
             pd.inventory = Inventory;
+        }
+
+        public void CopyFromPlayerData(PlayerData pd)
+        {
+            HP = pd.maxHealth;
+            Mana = pd.maxMana;
+            Inventory = pd.inventory;
         }
     }
 }
