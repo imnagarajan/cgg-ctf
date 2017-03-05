@@ -50,6 +50,11 @@ namespace CGGCTF
         int combatTime { get { return CTFConfig.CombatTime; } }
         int shutdownTime { get { return CTFConfig.ShutdownTime;  } }
         int minPlayerToStart { get { return CTFConfig.MinPlayerToStart; } }
+        bool[] displayExcept = new bool[256];
+
+        // money
+        string singular { get { return CTFConfig.MoneySingularName; } }
+        string plural { get { return CTFConfig.MoneyPluralName; } }
         
         #region Initialization
 
@@ -188,6 +193,7 @@ namespace CGGCTF
             TShock.CharacterDB.InsertPlayerData(tplr);
 
             hatForce[ix] = false;
+            displayExcept[ix] = false;
             tplr.IsLoggedIn = false;
 
             var pdata = new PlayerData(tplr);
@@ -338,7 +344,24 @@ namespace CGGCTF
         #region Timer Display
 
         string lastDisplay = null;
-        void displayTime(string phase = null)
+
+        void displayMessage(TSPlayer tplr, StringBuilder ss)
+        {
+            for (int i = 0; i < 50; ++i)
+                ss.Append("\n");
+            ss.Append("a");
+            for (int i = 0; i < 28; ++i)
+                ss.Append(" ");
+            ss.Append("\nctf");
+            tplr.SendData(PacketTypes.Status, ss.ToString(), 0);
+        }
+
+        void displayMessage(TSPlayer tplr, string msg)
+        {
+            displayMessage(tplr, new StringBuilder(msg));
+        }
+
+        void displayTime(TSPlayer tplr, string phase = null)
         {
             if (phase == null) {
                 if (lastDisplay != null)
@@ -346,7 +369,6 @@ namespace CGGCTF
                 else
                     return;
             }
-
             var ss = new StringBuilder();
             ss.Append("{0} phase".SFormat(phase));
             ss.Append("\nTime left - {0}:{1:d2}".SFormat(timeLeft / 60, timeLeft % 60));
@@ -357,25 +379,29 @@ namespace CGGCTF
                 ss.Append("\n{0} has blue flag.".SFormat(TShock.Players[revID[ctf.BlueFlagHolder]].Name));
             if (ctf.RedFlagHeld)
                 ss.Append("\n{0} has red flag.".SFormat(TShock.Players[revID[ctf.RedFlagHolder]].Name));
-
-            for (int i = 0; i < 50; ++i)
-                ss.Append("\n");
-            ss.Append("a");
-            for (int i = 0; i < 24; ++i)
-                ss.Append(" ");
-            ss.Append("\nctf");
-
-            TSPlayer.All.SendData(PacketTypes.Status, ss.ToString(), 0);
+            displayMessage(tplr, ss);
             lastDisplay = phase;
+        }
+
+        void displayTime(string phase = null)
+        {
+            foreach (var tplr in TShock.Players) {
+                if (tplr != null && tplr.Active && !displayExcept[tplr.Index])
+                    displayTime(TSPlayer.All, phase);
+            }
         }
 
         void displayBlank()
         {
-            var ss = new StringBuilder();
-            for (int i = 0; i < 60; ++i)
-                ss.Append("\n");
-            ss.Append("ctf");
-            TSPlayer.All.SendData(PacketTypes.Status, ss.ToString(), 0);
+            foreach (var tplr in TShock.Players) {
+                if (tplr != null && tplr.Active && !displayExcept[tplr.Index])
+                    displayBlank(tplr);
+            }
+        }
+
+        void displayBlank(TSPlayer tplr)
+        {
+            displayMessage(tplr, "");
         }
 
         void onTime(object sender, ElapsedEventArgs args)
@@ -450,8 +476,48 @@ namespace CGGCTF
 
             string className = string.Join(" ", args.Parameters).ToLower();
             if (className == "list") {
-                // TODO - class list
+
+                if (displayExcept[ix]) {
+                    displayExcept[ix] = false;
+                    displayBlank(tplr);
+                    tplr.SendInfoMessage("Disabled class list display.");
+                    return;
+                }
+
+                var list = classes.GetClasses();
+                var bought = new StringBuilder();
+                var notyet = new StringBuilder();
+                foreach (var cls in list) {
+                    if (true) { // TODO - check whether player owns it
+                        bought.Append(string.Format("\n{0}: {1}",
+                            cls.Name, cls.Description));
+                    } else {
+                        notyet.Append(string.Format("\n{0}: {1} ({2})",
+                            cls.Name, cls.Description, cls.Price == 0
+                            ? "Free" : CTFUtils.Pluralize(cls.Price, singular, plural)));
+                    }
+                }
+
+                var finalmsg = new StringBuilder();
+                if (bought.Length != 0) {
+                    finalmsg.Append("- Classes you have -");
+                    finalmsg.Append(bought);
+                }
+                if (bought.Length != 0 && notyet.Length != 0)
+                    finalmsg.Append("\n\n");
+                if (notyet.Length != 0) {
+                    finalmsg.Append("- Classes you do not have -");
+                    finalmsg.Append(notyet);
+                }
+
+                displayExcept[ix] = true;
+                displayMessage(tplr, finalmsg);
+
+                tplr.SendInfoMessage("Turn off your minimap to see class list.");
+                tplr.SendInfoMessage("Type {0}class list again to turn off.", Commands.Specifier);
+
             } else {
+
                 if (!ctf.GameIsRunning) {
                     tplr.SendErrorMessage("The game hasn't started yet!");
                     return;
@@ -469,8 +535,12 @@ namespace CGGCTF
                     tplr.SendErrorMessage("Class {0} doesn't exist. Try {1}class list.", className, Commands.Specifier);
                     return;
                 }
+
                 ctf.PickClass(id, cls);
+                displayExcept[ix] = false;
+                displayBlank(tplr);
                 // TODO - check if player owns it
+
             }
         }
 

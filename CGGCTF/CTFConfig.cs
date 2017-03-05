@@ -33,6 +33,9 @@ namespace CGGCTF
         public static int SpawnDistance { get { return instance.SpawnDistance; } }
         public static int WallWidth { get { return instance.WallWidth; } }
 
+        public static string MoneySingularName { get { return instance.MoneySingularName;  } }
+        public static string MoneyPluralName { get { return instance.MoneyPluralName;  } }
+
         class ActualConfig
         {
             public int WaitTime = 61;
@@ -44,6 +47,9 @@ namespace CGGCTF
             public int FlagDistance = 225;
             public int SpawnDistance = 300;
             public int WallWidth = 10;
+
+            public string MoneySingularName = "Coin";
+            public string MoneyPluralName = "Coins";
 
             public void Write(string path)
             {

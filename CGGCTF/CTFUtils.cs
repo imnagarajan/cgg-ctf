@@ -22,10 +22,14 @@ namespace CGGCTF
                 seconds = 0;
 
             return string.Format("{0}{1}{2}",
-                minutes == 0 ? "" : string.Format("{0} minute{1}", minutes, minutes == 1 ? "" : "s"),
+                minutes == 0 ? "" : Pluralize(minutes, "minute", "minutes"),
                 minutes == 0 || seconds == 0 ? "" : " ",
-                seconds == 0 && minutes != 0 ? "" :
-                string.Format("{0} second{1}", seconds, seconds == 1 ? "" : "s"));
+                seconds == 0 && minutes != 0 ? "" : Pluralize(seconds, "second", "seconds"));
+        }
+
+        public static string Pluralize(int num, string singular, string plural)
+        {
+            return string.Format("{0} {1}", num, num == 1 ? singular : plural);
         }
     }
 }
