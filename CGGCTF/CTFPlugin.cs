@@ -28,8 +28,14 @@ namespace CGGCTF
 
         // ctf game controller
         CTFController ctf;
-        CTFClassManager classes;
         CTFClass blankClass;
+        
+        // database
+        CTFClassManager classes;
+        CTFUserManager users;
+
+        // user stuffs
+        Dictionary<int, CTFUser> loadedUser = new Dictionary<int, CTFUser>();
 
         // player inventory
         PlayerData[] originalChar = new PlayerData[256];
@@ -111,9 +117,13 @@ namespace CGGCTF
             CTFConfig.Read();
             CTFConfig.Write();
 
+            #region Database stuffs
+            classes = new CTFClassManager();
+            users = new CTFUserManager();
+            #endregion
+
             #region CTF stuffs
             ctf = new CTFController(getCallback());
-            classes = new CTFClassManager();
             blankClass = new CTFClass();
             #endregion
 
@@ -166,6 +176,8 @@ namespace CGGCTF
             var ix = tplr.Index;
             var id = tplr.User.ID;
 
+            loadedUser[id] = users.GetUser(id);
+
             revID[id] = ix;
 
             originalChar[ix] = new PlayerData(tplr);
@@ -185,6 +197,9 @@ namespace CGGCTF
             var tplr = args.Player;
             var ix = tplr.Index;
             var id = tplr.User.ID;
+
+            users.SaveUser(loadedUser[id]);
+            loadedUser[id] = null;
 
             if (ctf.PlayerExists(id))
                 ctf.LeaveGame(id);
@@ -491,13 +506,17 @@ namespace CGGCTF
                         var bought = new StringBuilder();
                         var notyet = new StringBuilder();
                         foreach (var cls in list) {
-                            if (true) { // TODO - check whether player owns it
+                            if (!canSeeClass(tplr, cls))
+                                continue;
+                            if (canUseClass(tplr, cls)) {
                                 bought.Append(string.Format("\n{0}: {1}",
                                     cls.Name, cls.Description));
                             } else {
                                 notyet.Append(string.Format("\n{0}: {1} ({2})",
-                                    cls.Name, cls.Description, cls.Price == 0
-                                    ? "Free" : CTFUtils.Pluralize(cls.Price, singular, plural)));
+                                    cls.Name, cls.Description, cls.Sell
+                                    ? (cls.Price == 0 ? "Free" 
+                                    : CTFUtils.Pluralize(cls.Price, singular, plural))
+                                    : "Locked"));
                             }
                         }
 
@@ -780,9 +799,22 @@ namespace CGGCTF
                             return;
                         }
                         CTFClass cls = classes.GetClass(className);
-                        if (cls == null) {
-                            tplr.SendErrorMessage("Class {0} doesn't exist. Try {1}class list.", className, Commands.Specifier);
+                        if (cls == null || (!canSeeClass(tplr, cls) && !canUseClass(tplr, cls))) {
+                            tplr.SendErrorMessage("Class {0} doesn't exist. Try {1}class list.",
+                                className, Commands.Specifier);
                             return;
+                        }
+
+                        if (!canUseClass(tplr, cls)) {
+                            if (cls.Sell) {
+                                tplr.SendErrorMessage("You do not have {0}. Type {1}class buy {0}.",
+                                    cls.Name, Commands.Specifier);
+                                tplr.SendErrorMessage("Price: {0}. You have {1}.",
+                                    CTFUtils.Pluralize(cls.Price, singular, plural),
+                                    CTFUtils.Pluralize(loadedUser[id].Coins, singular, plural));
+                            } else {
+                                tplr.SendErrorMessage("You do not have {0}.", cls.Name);
+                            }
                         }
 
                         ctf.PickClass(id, cls);
@@ -1043,6 +1075,24 @@ namespace CGGCTF
             var ix = tplr.Index;
             var item = tplr.TPlayer.armor[armorHeadSlot];
             TSPlayer.All.SendData(PacketTypes.PlayerSlot, "", ix, armorHeadNetSlot, item.prefix, item.stack, item.netID);
+        }
+
+        bool canUseClass(TSPlayer tplr, CTFClass cls)
+        {
+            if (tplr.HasPermission("ctf.useall")
+                || (cls.Price == 0 && cls.Sell))
+                return true;
+            if (!tplr.IsLoggedIn)
+                return false;
+            return loadedUser[tplr.User.ID].Classes.Contains(cls.ID);
+        }
+
+        bool canSeeClass(TSPlayer tplr, CTFClass cls)
+        {
+            if (cls.Hidden && !loadedUser[tplr.User.ID].Classes.Contains(cls.ID)
+                && !tplr.HasPermission("ctf.seeall"))
+                return false;
+            return true;
         }
 
         #endregion

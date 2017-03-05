@@ -67,6 +67,8 @@
     <Compile Include="CTFController.cs" />
     <Compile Include="CTFPvPControl.cs" />
     <Compile Include="CTFTileSystem.cs" />
+    <Compile Include="CTFUser.cs" />
+    <Compile Include="CTFUserManager.cs" />
     <Compile Include="CTFUtils.cs" />
     <Compile Include="Enums.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
