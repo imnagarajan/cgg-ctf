@@ -35,7 +35,7 @@ namespace CGGCTF
         CTFUserManager users;
 
         // user stuffs
-        Dictionary<int, CTFUser> loadedUser = new Dictionary<int, CTFUser>();
+        CTFUser[] loadedUser = new CTFUser[256];
 
         // player inventory
         PlayerData[] originalChar = new PlayerData[256];
@@ -742,6 +742,80 @@ namespace CGGCTF
                         tplr.SendSuccessMessage("Changed name of {0} to {1}.",
                             editingClass[ix].Name, text);
                         editingClass[ix].Name = text;
+
+                    }
+                    break;
+                #endregion
+
+                #region /class price <amount>
+                case "price": {
+
+                        if (!tplr.HasPermission("ctf.edit")) {
+                            tplr.SendErrorMessage("You don't have access to this command.");
+                            return;
+                        }
+                        if (editingClass[ix] == null) {
+                            tplr.SendErrorMessage("You are not editing any classes right now.");
+                            return;
+                        }
+                        if (args.Parameters.Count != 2) {
+                            tplr.SendErrorMessage("Usage: {0}class price <amount>", Commands.Specifier);
+                            return;
+                        }
+                        int amount;
+                        if (!int.TryParse(args.Parameters[1], out amount)) {
+                            tplr.SendErrorMessage("Invalid price.");
+                            return;
+                        }
+
+                        editingClass[ix].Price = amount;
+                        tplr.SendSuccessMessage("Changed {0} price to {1}.",
+                            editingClass[ix].Name,
+                            CTFUtils.Pluralize(editingClass[ix].Price, singular, plural));
+
+                    }
+                    break;
+                #endregion
+
+                #region /class hidden
+                case "hidden": {
+
+                        if (!tplr.HasPermission("ctf.edit")) {
+                            tplr.SendErrorMessage("You don't have access to this command.");
+                            return;
+                        }
+                        if (editingClass[ix] == null) {
+                            tplr.SendErrorMessage("You are not editing any classes right now.");
+                            return;
+                        }
+
+                        editingClass[ix].Hidden = !editingClass[ix].Hidden;
+                        if (editingClass[ix].Hidden)
+                            tplr.SendSuccessMessage("{0} is now hidden.", editingClass[ix].Name);
+                        else
+                            tplr.SendSuccessMessage("{0} is now visible.", editingClass[ix].Name);
+
+                    }
+                    break;
+                #endregion
+
+                #region /class sell
+                case "sell": {
+
+                        if (!tplr.HasPermission("ctf.edit")) {
+                            tplr.SendErrorMessage("You don't have access to this command.");
+                            return;
+                        }
+                        if (editingClass[ix] == null) {
+                            tplr.SendErrorMessage("You are not editing any classes right now.");
+                            return;
+                        }
+
+                        editingClass[ix].Sell = !editingClass[ix].Sell;
+                        if (editingClass[ix].Sell)
+                            tplr.SendSuccessMessage("{0} can't be bought now.", editingClass[ix].Name);
+                        else
+                            tplr.SendSuccessMessage("{0} can be bought now.", editingClass[ix].Name);
 
                     }
                     break;
