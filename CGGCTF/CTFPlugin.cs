@@ -523,7 +523,7 @@ namespace CGGCTF
                     break;
                 #endregion
 
-                #region /class edit
+                #region /class edit <name>
                 case "edit": {
 
                         if (!tplr.HasPermission("ctf.edit")) {
@@ -723,6 +723,41 @@ namespace CGGCTF
                         tplr.SendSuccessMessage("Changed name of {0} to {1}.",
                             editingClass[ix].Name, text);
                         editingClass[ix].Name = text;
+
+                    }
+                    break;
+                #endregion
+
+                #region /class delete <name>
+                case "delete": {
+
+                        if (!tplr.HasPermission("ctf.edit")) {
+                            tplr.SendErrorMessage("You don't have access to this command.");
+                            return;
+                        }
+                        if (ctf.Phase != CTFPhase.Lobby) {
+                            tplr.SendErrorMessage("You can only edit classes before game starts.");
+                            return;
+                        }
+                        if (editingClass[ix] != null) {
+                            tplr.SendErrorMessage("You are editing class {0} right now.", editingClass[ix].Name);
+                            tplr.SendErrorMessage("{0}class save or {0}class discard.", Commands.Specifier);
+                            return;
+                        }
+                        if (args.Parameters.Count < 2) {
+                            tplr.SendErrorMessage("Usage: {0}class delete <name>", Commands.Specifier);
+                            return;
+                        }
+
+                        string className = string.Join(" ", args.Parameters.Skip(1));
+                        var cls = classes.GetClass(className);
+                        if (cls == null) {
+                            tplr.SendErrorMessage("Class {0} doesn't exist.", className);
+                            return;
+                        }
+
+                        tplr.SendSuccessMessage("Class {0} has been removed.", cls.Name);
+                        classes.DeleteClass(cls.ID);
 
                     }
                     break;

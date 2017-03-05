@@ -108,5 +108,14 @@ namespace CGGCTF
                 }
             }
         }
+
+        public void DeleteClass(int id)
+        {
+            try {
+                db.Query("DELETE FROM ctfclasses WHERE ID = @0", id);
+            } catch (Exception ex) {
+                TShock.Log.Error(ex.ToString());
+            }
+        }
     }
 }
