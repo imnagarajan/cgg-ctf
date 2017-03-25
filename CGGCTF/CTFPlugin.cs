@@ -403,7 +403,7 @@ namespace CGGCTF
         {
             foreach (var tplr in TShock.Players) {
                 if (tplr != null && tplr.Active && !displayExcept[tplr.Index])
-                    displayTime(TSPlayer.All, phase);
+                    displayTime(tplr, phase);
             }
         }
 
@@ -813,9 +813,9 @@ namespace CGGCTF
 
                         editingClass[ix].Sell = !editingClass[ix].Sell;
                         if (editingClass[ix].Sell)
-                            tplr.SendSuccessMessage("{0} can't be bought now.", editingClass[ix].Name);
-                        else
                             tplr.SendSuccessMessage("{0} can be bought now.", editingClass[ix].Name);
+                        else
+                            tplr.SendSuccessMessage("{0} can't be bought now.", editingClass[ix].Name);
 
                     }
                     break;
