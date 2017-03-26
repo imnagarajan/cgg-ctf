@@ -1099,6 +1099,13 @@ namespace CGGCTF
                 else
                     announceMessage("Game ended in a draw.");
             };
+            cb.AnnounceGameAbort = delegate (string reason) {
+                displayBlank();
+                timeLeft = shutdownTime;
+                announceMessage("The game has been aborted.{0}",
+                    string.IsNullOrWhiteSpace(reason) ? ""
+                    : string.Format(" ({0})", reason));
+            };
             cb.TellPlayerTeam = delegate (int id, CTFTeam team) {
                 Debug.Assert(team != CTFTeam.None);
                 var tplr = TShock.Players[revID[id]];
@@ -1127,10 +1134,14 @@ namespace CGGCTF
 
         void nextPhase()
         {
-            if (ctf.Phase == CTFPhase.Ended)
+            if (ctf.Phase == CTFPhase.Ended) {
                 shutdown();
-            else
-                ctf.NextPhase();
+            } else {
+                if (ctf.RedPlayer == 0 || ctf.BluePlayer == 0)
+                    ctf.AbortGame("Insufficient players");
+                else
+                    ctf.NextPhase();
+            }
         }
 
         void addCrown(TSPlayer tplr)

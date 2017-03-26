@@ -29,6 +29,7 @@ namespace CGGCTF
         public delegate void AnnounceGameStartD();
         public delegate void AnnounceCombatStartD();
         public delegate void AnnounceGameEndD(CTFTeam winner, int redScore, int blueScore);
+        public delegate void AnnounceGameAbortD(string reason);
         public delegate void TellPlayerTeamD(int id, CTFTeam team);
         public delegate void TellPlayerSelectClassD(int id);
         public delegate void TellPlayerCurrentClassD(int id, string name);
@@ -48,6 +49,7 @@ namespace CGGCTF
         public AnnounceGameStartD AnnounceGameStart;
         public AnnounceCombatStartD AnnounceCombatStart;
         public AnnounceGameEndD AnnounceGameEnd;
+        public AnnounceGameAbortD AnnounceGameAbort;
         public TellPlayerTeamD TellPlayerTeam;
         public TellPlayerSelectClassD TellPlayerSelectClass;
         public TellPlayerCurrentClassD TellPlayerCurrentClass;

@@ -273,6 +273,13 @@ namespace CGGCTF
             announceGameEnd(win);
         }
 
+        public void AbortGame(string reason)
+        {
+            Debug.Assert(GameIsRunning);
+            Phase = CTFPhase.Ended;
+            announceGameAbort(reason);
+        }
+
         #endregion
 
         #region Callback managers
@@ -364,6 +371,11 @@ namespace CGGCTF
         void announceGameEnd(CTFTeam winner)
         {
             cb.AnnounceGameEnd(winner, RedScore, BlueScore);
+        }
+
+        void announceGameAbort(string reason)
+        {
+            cb.AnnounceGameAbort(reason);
         }
 
         void tellPlayerTeam(int id)
