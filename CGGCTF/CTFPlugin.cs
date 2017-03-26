@@ -158,6 +158,7 @@ namespace CGGCTF
             add(new Command("ctf.play", cmdJoin, "join"));
             add(new Command("ctf.play", cmdClass, "class"));
             add(new Command("ctf.skip", cmdSkip, "skip"));
+            add(new Command("ctf.extend", cmdExtend, "extend"));
             #endregion
         }
 
@@ -921,6 +922,26 @@ namespace CGGCTF
         void cmdSkip(CommandArgs args)
         {
             nextPhase();
+        }
+
+        void cmdExtend(CommandArgs args)
+        {
+            var tplr = args.Player;
+
+            if (args.Parameters.Count != 1) {
+                tplr.SendErrorMessage("Usage: {0}extend <time>", Commands.Specifier);
+                return;
+            }
+
+            int time = 0;
+            if (!TShock.Utils.TryParseTime(args.Parameters[0], out time)) {
+                tplr.SendErrorMessage("Invalid time string! Proper format: _d_h_m_s, with at least one time specifier.");
+                tplr.SendErrorMessage("For example, 1d and 10h-30m+2m are both valid time strings, but 2 is not.");
+                return;
+            }
+
+            timeLeft += time;
+            tplr.SendSuccessMessage("Extended time of current phase.");
         }
 
         #endregion
