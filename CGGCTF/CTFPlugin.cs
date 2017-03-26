@@ -49,7 +49,7 @@ namespace CGGCTF
         const int crownID = Terraria.ID.ItemID.GoldCrown;
 
         // time stuffs
-        Timer timer;
+        Timer gameTimer;
         int timeLeft;
         int waitTime { get { return CTFConfig.WaitTime; } }
         int prepTime { get { return CTFConfig.PrepTime; } }
@@ -57,6 +57,9 @@ namespace CGGCTF
         int shutdownTime { get { return CTFConfig.ShutdownTime;  } }
         int minPlayerToStart { get { return CTFConfig.MinPlayerToStart; } }
         bool[] displayExcept = new bool[256];
+
+        // wind and rain stuffs
+        Timer rainTimer;
 
         // money
         string singular { get { return CTFConfig.MoneySingularName; } }
@@ -128,9 +131,22 @@ namespace CGGCTF
             #endregion
 
             #region Time stuffs
-            timer = new Timer(1000);
-            timer.Start();
-            timer.Elapsed += onTime;
+            gameTimer = new Timer(1000);
+            gameTimer.Start();
+            gameTimer.Elapsed += onGameTimerElapsed;
+            #endregion
+
+            #region Wind and rain stuffs
+            rainTimer = new Timer(CTFConfig.RainTimer * 1000);
+            rainTimer.Start();
+            rainTimer.Elapsed += delegate (object sender, ElapsedEventArgs e) {
+                Main.StopRain();
+                Main.StopSlimeRain();
+                Main.windSpeed = 0F;
+                Main.windSpeedSet = 0F;
+                Main.windSpeedSpeed = 0F;
+                TSPlayer.All.SendData(PacketTypes.WorldInfo);
+            };
             #endregion
 
             #region Commands
@@ -138,7 +154,7 @@ namespace CGGCTF
                 Commands.ChatCommands.RemoveAll(c2 => c2.Names.Exists(s2 => c.Names.Contains(s2)));
                 Commands.ChatCommands.Add(c);
             };
-            add(new Command(Permissions.spawn, cmdSpawn, "spawn"));
+            add(new Command(Permissions.spawn, cmdSpawn, "spawn", "home"));
             add(new Command("ctf.play", cmdJoin, "join"));
             add(new Command("ctf.play", cmdClass, "class"));
             add(new Command("ctf.skip", cmdSkip, "skip"));
@@ -313,7 +329,7 @@ namespace CGGCTF
                 args.Handled = true;
             };
             if (tiles.InvalidPlace(team, args.X, args.Y, !ctf.IsPvPPhase)) {
-                args.Player.SetBuff(Terraria.ID.BuffID.Cursed, 180, true);
+                args.Player.SetBuff(Terraria.ID.BuffID.Cursed, CTFConfig.CursedTime, true);
                 sendTile();
             } else if (args.Action == GetDataHandlers.EditAction.PlaceTile) {
                 if (args.EditData == tiles.grayBlock) {
@@ -420,7 +436,7 @@ namespace CGGCTF
             displayMessage(tplr, "");
         }
 
-        void onTime(object sender, ElapsedEventArgs args)
+        void onGameTimerElapsed(object sender, ElapsedEventArgs args)
         {
             if (timeLeft > 0) {
                 --timeLeft;
@@ -457,7 +473,7 @@ namespace CGGCTF
             var id = tplr.User.ID;
 
             if (!ctf.GameIsRunning || !ctf.PlayerExists(id)) {
-                tplr.Teleport(Main.spawnTileX * 16, Main.spawnTileY * 16);
+                tplr.Teleport(Main.spawnTileX * 16, (Main.spawnTileY - 3) * 16);
                 tplr.SendSuccessMessage("Warped to spawn point.");
             } else if (ctf.IsPvPPhase) {
                 tplr.SendErrorMessage("You can't warp to spawn now!");
@@ -715,7 +731,7 @@ namespace CGGCTF
 
                         var text = string.Join(" ", args.Parameters.Skip(1));
                         editingClass[ix].Description = text;
-                        tplr.SendSuccessMessage("Changed {0} description to:");
+                        tplr.SendSuccessMessage("Changed {0} description to:", editingClass[ix].Name);
                         tplr.SendInfoMessage(text);
 
                     }

@@ -33,6 +33,9 @@ namespace CGGCTF
         public static int SpawnDistance { get { return instance.SpawnDistance; } }
         public static int WallWidth { get { return instance.WallWidth; } }
 
+        public static int RainTimer { get { return instance.RainTimer; } }
+        public static int CursedTime { get { return instance.CursedTime; } }
+
         public static string MoneySingularName { get { return instance.MoneySingularName;  } }
         public static string MoneyPluralName { get { return instance.MoneyPluralName;  } }
 
@@ -47,6 +50,9 @@ namespace CGGCTF
             public int FlagDistance = 225;
             public int SpawnDistance = 300;
             public int WallWidth = 10;
+
+            public int RainTimer = 10;
+            public int CursedTime = 180;
 
             public string MoneySingularName = "Coin";
             public string MoneyPluralName = "Coins";
