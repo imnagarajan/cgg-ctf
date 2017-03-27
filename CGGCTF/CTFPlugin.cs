@@ -1158,10 +1158,7 @@ namespace CGGCTF
             if (ctf.Phase == CTFPhase.Ended) {
                 shutdown();
             } else {
-                if (ctf.RedPlayer == 0 || ctf.BluePlayer == 0)
-                    ctf.AbortGame("Insufficient players");
-                else
-                    ctf.NextPhase();
+                ctf.NextPhase();
             }
         }
 

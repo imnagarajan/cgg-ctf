@@ -29,7 +29,9 @@ namespace CGGCTF
         public int TotalPlayer { get; private set; } = 0;
         public int OnlinePlayer { get; private set; } = 0;
         public int RedPlayer { get; private set; } = 0;
+        public int RedOnline { get; private set; } = 0;
         public int BluePlayer { get; private set; } = 0;
+        public int BlueOnline { get; private set; } = 0;
 
         public int RedFlagHolder { get; private set; } = -1;
         public int BlueFlagHolder { get; private set; } = -1;
@@ -114,6 +116,20 @@ namespace CGGCTF
             warpToSpawn(id);
         }
 
+        bool checkSufficientPlayer()
+        {
+            if (!CTFConfig.AbortGameOnNoPlayer)
+                return true;
+            if (Phase == CTFPhase.Lobby) {
+                if (OnlinePlayer < 2)
+                    return false;
+            } else {
+                if (RedOnline == 0 || BlueOnline == 0)
+                    return false;
+            }
+            return true;
+        }
+
         #endregion
 
         #region Main functions
@@ -146,6 +162,10 @@ namespace CGGCTF
         {
             Debug.Assert(PlayerExists(id));
             if (GameIsRunning) {
+                if (players[id].Team == CTFTeam.Red)
+                    --RedOnline;
+                else
+                    --BlueOnline;
                 if (players[id].PickedClass)
                     saveInventory(id);
                 FlagDrop(id);
@@ -222,6 +242,10 @@ namespace CGGCTF
 
         public void NextPhase()
         {
+            if (!checkSufficientPlayer()) {
+                AbortGame("Insufficient players");
+                return;
+            }
             if (Phase == CTFPhase.Lobby)
                 StartGame();
             else if (Phase == CTFPhase.Preparation)
@@ -242,7 +266,6 @@ namespace CGGCTF
                 assignTeam(id);
                 getPlayerStarted(id);
             }
-
         }
 
         public void StartCombat()
@@ -275,7 +298,6 @@ namespace CGGCTF
 
         public void AbortGame(string reason)
         {
-            Debug.Assert(GameIsRunning);
             Phase = CTFPhase.Ended;
             announceGameAbort(reason);
         }
@@ -293,6 +315,10 @@ namespace CGGCTF
         {
             Debug.Assert(PlayerExists(id));
             cb.SetTeam(id, players[id].Team);
+            if (players[id].Team == CTFTeam.Red)
+                ++RedOnline;
+            else
+                ++BlueOnline;
         }
 
         void setPvP(int id)
