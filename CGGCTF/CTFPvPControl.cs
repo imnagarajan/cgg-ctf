@@ -12,6 +12,7 @@ namespace CGGCTF
     {
         TeamColor[] playerColor = new TeamColor[256];
         bool[] playerPvP = new bool[256];
+        public bool Enforced = true;
 
         public void SetTeam(int index, TeamColor color)
         {
@@ -22,6 +23,8 @@ namespace CGGCTF
 
         public void PlayerTeamHook(object sender, GetDataHandlers.PlayerTeamEventArgs e)
         {
+            if (!Enforced)
+                return;
             e.Handled = true;
             var index = e.PlayerId;
             Main.player[index].team = (int)playerColor[index];
@@ -37,6 +40,8 @@ namespace CGGCTF
 
         public void TogglePvPHook(object sender, GetDataHandlers.TogglePvpEventArgs e)
         {
+            if (!Enforced)
+                return;
             e.Handled = true;
             var index = e.PlayerId;
             Main.player[index].hostile = playerPvP[index];

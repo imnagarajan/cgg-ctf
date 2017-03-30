@@ -1139,6 +1139,7 @@ namespace CGGCTF
                     announceBlueMessage("Congratulations to blue team!");
                 else
                     announceMessage("Game ended in a draw.");
+                pvp.Enforced = false;
             };
             cb.AnnounceGameAbort = delegate (string reason) {
                 displayBlank();
@@ -1146,6 +1147,7 @@ namespace CGGCTF
                 announceMessage("The game has been aborted.{0}",
                     string.IsNullOrWhiteSpace(reason) ? ""
                     : string.Format(" ({0})", reason));
+                pvp.Enforced = false;
             };
             cb.TellPlayerTeam = delegate (int id, CTFTeam team) {
                 Debug.Assert(team != CTFTeam.None);
