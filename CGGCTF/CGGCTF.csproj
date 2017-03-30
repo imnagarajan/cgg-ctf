@@ -62,6 +62,7 @@
     <Compile Include="CTFClass.cs" />
     <Compile Include="CTFClassManager.cs" />
     <Compile Include="CTFConfig.cs" />
+    <Compile Include="CTFPermissions.cs" />
     <Compile Include="CTFPlayer.cs" />
     <Compile Include="CTFPlugin.cs" />
     <Compile Include="CTFController.cs" />

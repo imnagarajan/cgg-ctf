@@ -155,10 +155,10 @@ namespace CGGCTF
                 Commands.ChatCommands.Add(c);
             };
             add(new Command(Permissions.spawn, cmdSpawn, "spawn", "home"));
-            add(new Command("ctf.play", cmdJoin, "join"));
-            add(new Command("ctf.play", cmdClass, "class"));
-            add(new Command("ctf.skip", cmdSkip, "skip"));
-            add(new Command("ctf.extend", cmdExtend, "extend"));
+            add(new Command(CTFPermissions.Play, cmdJoin, "join"));
+            add(new Command(CTFPermissions.Play, cmdClass, "class"));
+            add(new Command(CTFPermissions.Skip, cmdSkip, "skip"));
+            add(new Command(CTFPermissions.Extend, cmdExtend, "extend"));
             #endregion
         }
 
@@ -562,7 +562,7 @@ namespace CGGCTF
                 #region /class edit <name>
                 case "edit": {
 
-                        if (!tplr.HasPermission("ctf.edit")) {
+                        if (!tplr.HasPermission(CTFPermissions.Edit)) {
                             tplr.SendErrorMessage("You don't have access to this command.");
                             return;
                         }
@@ -607,7 +607,7 @@ namespace CGGCTF
                 #region /class save
                 case "save": {
 
-                        if (!tplr.HasPermission("ctf.edit")) {
+                        if (!tplr.HasPermission(CTFPermissions.Edit)) {
                             tplr.SendErrorMessage("You don't have access to this command.");
                             return;
                         }
@@ -635,7 +635,7 @@ namespace CGGCTF
                 case "discard":
                 case "cancel": {
 
-                        if (!tplr.HasPermission("ctf.edit")) {
+                        if (!tplr.HasPermission(CTFPermissions.Edit)) {
                             tplr.SendErrorMessage("You don't have access to this command.");
                             return;
                         }
@@ -658,7 +658,7 @@ namespace CGGCTF
                 #region /class hp <amount>
                 case "hp": {
 
-                        if (!tplr.HasPermission("ctf.edit")) {
+                        if (!tplr.HasPermission(CTFPermissions.Edit)) {
                             tplr.SendErrorMessage("You don't have access to this command.");
                             return;
                         }
@@ -688,7 +688,7 @@ namespace CGGCTF
                 case "mp":
                 case "mana": {
 
-                        if (!tplr.HasPermission("ctf.edit")) {
+                        if (!tplr.HasPermission(CTFPermissions.Edit)) {
                             tplr.SendErrorMessage("You don't have access to this command.");
                             return;
                         }
@@ -717,7 +717,7 @@ namespace CGGCTF
                 #region /class desc <text>
                 case "desc": {
 
-                        if (!tplr.HasPermission("ctf.edit")) {
+                        if (!tplr.HasPermission(CTFPermissions.Edit)) {
                             tplr.SendErrorMessage("You don't have access to this command.");
                             return;
                         }
@@ -742,7 +742,7 @@ namespace CGGCTF
                 #region /class name <text>
                 case "name": {
 
-                        if (!tplr.HasPermission("ctf.edit")) {
+                        if (!tplr.HasPermission(CTFPermissions.Edit)) {
                             tplr.SendErrorMessage("You don't have access to this command.");
                             return;
                         }
@@ -767,7 +767,7 @@ namespace CGGCTF
                 #region /class price <amount>
                 case "price": {
 
-                        if (!tplr.HasPermission("ctf.edit")) {
+                        if (!tplr.HasPermission(CTFPermissions.Edit)) {
                             tplr.SendErrorMessage("You don't have access to this command.");
                             return;
                         }
@@ -797,7 +797,7 @@ namespace CGGCTF
                 #region /class hidden
                 case "hidden": {
 
-                        if (!tplr.HasPermission("ctf.edit")) {
+                        if (!tplr.HasPermission(CTFPermissions.Edit)) {
                             tplr.SendErrorMessage("You don't have access to this command.");
                             return;
                         }
@@ -819,7 +819,7 @@ namespace CGGCTF
                 #region /class sell
                 case "sell": {
 
-                        if (!tplr.HasPermission("ctf.edit")) {
+                        if (!tplr.HasPermission(CTFPermissions.Edit)) {
                             tplr.SendErrorMessage("You don't have access to this command.");
                             return;
                         }
@@ -841,7 +841,7 @@ namespace CGGCTF
                 #region /class delete <name>
                 case "delete": {
 
-                        if (!tplr.HasPermission("ctf.edit")) {
+                        if (!tplr.HasPermission(CTFPermissions.Edit)) {
                             tplr.SendErrorMessage("You don't have access to this command.");
                             return;
                         }
@@ -1198,7 +1198,7 @@ namespace CGGCTF
 
         bool canUseClass(TSPlayer tplr, CTFClass cls)
         {
-            if (tplr.HasPermission("ctf.useall")
+            if (tplr.HasPermission(CTFPermissions.UseAll)
                 || (cls.Price == 0 && cls.Sell))
                 return true;
             if (!tplr.IsLoggedIn)
@@ -1209,7 +1209,7 @@ namespace CGGCTF
         bool canSeeClass(TSPlayer tplr, CTFClass cls)
         {
             if (cls.Hidden && !loadedUser[tplr.User.ID].Classes.Contains(cls.ID)
-                && !tplr.HasPermission("ctf.seeall"))
+                && !tplr.HasPermission(CTFPermissions.SeeAll))
                 return false;
             return true;
         }
