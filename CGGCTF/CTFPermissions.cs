@@ -14,5 +14,6 @@ namespace CGGCTF
         public static readonly string Edit = "ctf.edit";
         public static readonly string SeeAll = "ctf.seeall";
         public static readonly string UseAll = "ctf.useall";
+        public static readonly string IgnoreInteract = "ctf.ignore.interact";
     }
 }

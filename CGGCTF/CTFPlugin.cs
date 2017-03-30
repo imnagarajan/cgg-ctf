@@ -87,6 +87,7 @@ namespace CGGCTF
             GetDataHandlers.PlayerSlot += onSlot;
 
             GetDataHandlers.TileEdit += onTileEdit;
+            GetDataHandlers.ChestOpen += onChestOpen;
             GetDataHandlers.PlayerTeam += pvp.PlayerTeamHook;
             GetDataHandlers.TogglePvp += pvp.TogglePvPHook;
         }
@@ -109,6 +110,7 @@ namespace CGGCTF
                 GetDataHandlers.PlayerSlot -= onSlot;
 
                 GetDataHandlers.TileEdit -= onTileEdit;
+                GetDataHandlers.ChestOpen -= onChestOpen;
                 GetDataHandlers.PlayerTeam -= pvp.PlayerTeamHook;
                 GetDataHandlers.TogglePvp -= pvp.TogglePvPHook;
             }
@@ -320,15 +322,18 @@ namespace CGGCTF
             var tplr = args.Player;
             var id = tplr.IsLoggedIn ? tplr.User.ID : -1;
 
-            if (!ctf.PlayerExists(id))
-                return;
-
-            var team = ctf.GetPlayerTeam(id);
-
             Action sendTile = () => {
                 TSPlayer.All.SendTileSquare(args.X, args.Y, 1);
                 args.Handled = true;
             };
+            if (!tplr.HasPermission(CTFPermissions.IgnoreInteract)
+                && (!ctf.PlayerExists(id) || ctf.Phase == CTFPhase.Lobby)) {
+                sendTile();
+                return;
+            }
+
+            var team = ctf.GetPlayerTeam(id);
+
             if (tiles.InvalidPlace(team, args.X, args.Y, !ctf.IsPvPPhase)) {
                 args.Player.SetBuff(Terraria.ID.BuffID.Cursed, CTFConfig.CursedTime, true);
                 sendTile();
@@ -346,6 +351,21 @@ namespace CGGCTF
                     tiles.SetTile(args.X, args.Y, tiles.grayBlock);
                     sendTile();
                 }
+            }
+        }
+
+        void onChestOpen(object sender, GetDataHandlers.ChestOpenEventArgs args)
+        {
+            if (args.Handled)
+                return;
+
+            var tplr = args.Player;
+            var id = tplr.IsLoggedIn ? tplr.User.ID : -1;
+
+            if (!tplr.HasPermission(CTFPermissions.IgnoreInteract)
+                && (!ctf.PlayerExists(id) || ctf.Phase == CTFPhase.Lobby)) {
+                args.Handled = true;
+                return;
             }
         }
 
