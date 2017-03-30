@@ -74,6 +74,7 @@ namespace CGGCTF
         {
             ServerApi.Hooks.GameInitialize.Register(this, onInitialize);
             GeneralHooks.ReloadEvent += onReload;
+            ServerApi.Hooks.GameUpdate.Register(this, onUpdate);
 
             ServerApi.Hooks.ServerJoin.Register(this, onJoin);
             PlayerHooks.PlayerPostLogin += onLogin;
@@ -97,6 +98,7 @@ namespace CGGCTF
             if (Disposing) {
                 ServerApi.Hooks.GameInitialize.Deregister(this, onInitialize);
                 GeneralHooks.ReloadEvent -= onReload;
+                ServerApi.Hooks.GameUpdate.Deregister(this, onUpdate);
 
                 ServerApi.Hooks.ServerJoin.Deregister(this, onJoin);
                 PlayerHooks.PlayerPostLogin -= onLogin;
@@ -173,6 +175,21 @@ namespace CGGCTF
         #endregion
 
         #region Basic Hooks
+
+        bool worldLoaded = false;
+
+        void onUpdate(EventArgs args)
+        {
+            if (!worldLoaded) {
+                worldLoaded = true;
+                onWorldLoad(args);
+            }
+        }
+
+        void onWorldLoad(EventArgs args)
+        {
+            tiles.RemoveBadStuffs();
+        }
 
         void onJoin(JoinEventArgs args)
         {

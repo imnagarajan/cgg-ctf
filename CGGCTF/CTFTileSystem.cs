@@ -15,9 +15,19 @@ namespace CGGCTF
         int flagDistance { get { return CTFConfig.FlagDistance;  } }
         int spawnDistance { get { return CTFConfig.SpawnDistance;  } }
 
+        int maxX {
+            get {
+                return Main.maxTilesX;
+            }
+        }
+        int maxY {
+            get {
+                return Main.maxTilesY;
+            }
+        }
         int mapMiddle {
             get {
-                return Main.maxTilesX / 2;
+                return maxX / 2;
             }
         }
 
@@ -52,7 +62,7 @@ namespace CGGCTF
         int wallWidth { get { return CTFConfig.WallWidth; } }
         int wallMiddle {
             get {
-                return Main.maxTilesX / 2;
+                return maxX / 2;
             }
         }
         int wallLeft {
@@ -83,7 +93,7 @@ namespace CGGCTF
 
         public bool IsSolidTile(int x, int y)
         {
-            return x < 0 || y < 0 || x >= Main.maxTilesX || y >= Main.maxTilesY || (Main.tile[x, y].active() && Main.tileSolid[Main.tile[x, y].type]);
+            return x < 0 || y < 0 || x >= maxX || y >= Main.maxTilesY || (Main.tile[x, y].active() && Main.tileSolid[Main.tile[x, y].type]);
         }
 
         public void SetTile(int i, int j, int tileType, int style = 0)
@@ -440,6 +450,56 @@ namespace CGGCTF
         }
 
         #endregion
+
+        public void RemoveBadStuffs()
+        {
+            for (int i = 0; i < maxX; ++i) {
+                for (int j = 0; j < maxY; ++j) {
+
+                    // grass
+                    if (Main.tile[i, j].type == 23
+                        || Main.tile[i, j].type == 199)
+                        SetTile(i, j, 2);
+
+                    // stone
+                    else if (Main.tile[i, j].type == 25
+                        || Main.tile[i, j].type == 203)
+                        SetTile(i, j, 1);
+
+                    // sand
+                    else if (Main.tile[i, j].type == 112
+                        || Main.tile[i, j].type == 234)
+                        SetTile(i, j, 53);
+
+                    // life crystals, anvils, hellforge
+                    else if (Main.tile[i, j].type == 12
+                        || Main.tile[i, j].type == 16
+                        || Main.tile[i, j].type == 77)
+                        SetTile(i, j, -1);
+
+                    // plants
+                    else if (Main.tile[i, j].type == 24
+                        || Main.tile[i, j].type == 201)
+                        SetTile(i, j, -1);
+
+                    // thorns
+                    else if (Main.tile[i, j].type == 32
+                        || Main.tile[i, j].type == 352)
+                        SetTile(i, j, -1);
+
+                    // grass walls
+                    else if (Main.tile[i, j].wall == 69
+                        || Main.tile[i, j].wall == 81)
+                        SetWall(i, j, 63);
+
+                    // stone walls
+                    else if (Main.tile[i, j].wall == 3
+                        || Main.tile[i, j].wall == 83)
+                        SetWall(i, j, 1);
+
+                }
+            }
+        }
 
     }
 }
