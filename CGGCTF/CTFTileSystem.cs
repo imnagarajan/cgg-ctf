@@ -471,6 +471,21 @@ namespace CGGCTF
                         || Main.tile[i, j].type == 234)
                         SetTile(i, j, 53);
 
+                    // sandstone
+                    else if (Main.tile[i, j].type == 400
+                        || Main.tile[i, j].type == 401)
+                        SetTile(i, j, 396);
+
+                    // hardened sand
+                    else if (Main.tile[i, j].type == 398
+                        || Main.tile[i, j].type == 399)
+                        SetTile(i, j, 397);
+
+                    // ice
+                    else if (Main.tile[i, j].type == 163
+                        || Main.tile[i, j].type == 200)
+                        SetTile(i, j, 161);
+
                     // life crystals, anvils, hellforge
                     else if (Main.tile[i, j].type == 12
                         || Main.tile[i, j].type == 16
@@ -487,6 +502,16 @@ namespace CGGCTF
                         || Main.tile[i, j].type == 352)
                         SetTile(i, j, -1);
 
+                    // corruption walls
+                    else if (Main.tile[i, j].wall >= 188
+                        && Main.tile[i, j].wall <= 191)
+                        SetWall(i, j, 196 + (Main.tile[i,j].wall - 188));
+
+                    // crimson walls
+                    else if (Main.tile[i, j].wall >= 192
+                        && Main.tile[i, j].wall <= 195)
+                        SetWall(i, j, 196 + (Main.tile[i,j].wall - 192));
+
                     // grass walls
                     else if (Main.tile[i, j].wall == 69
                         || Main.tile[i, j].wall == 81)
@@ -496,6 +521,16 @@ namespace CGGCTF
                     else if (Main.tile[i, j].wall == 3
                         || Main.tile[i, j].wall == 83)
                         SetWall(i, j, 1);
+
+                    // sand walls
+                    else if (Main.tile[i, j].wall == 217
+                        || Main.tile[i, j].wall == 218)
+                        SetWall(i, j, 216);
+
+                    // hardened sand walls
+                    else if (Main.tile[i, j].wall == 220
+                        || Main.tile[i, j].wall == 221)
+                        SetWall(i, j, 187);
 
                 }
             }
