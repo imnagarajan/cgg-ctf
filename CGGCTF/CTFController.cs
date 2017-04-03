@@ -83,6 +83,8 @@ namespace CGGCTF
 
         void assignTeam(int id)
         {
+            Debug.Assert(PlayerExists(id));
+            
             if (players[id].Team != CTFTeam.None)
                 return;
 
@@ -304,6 +306,31 @@ namespace CGGCTF
             announceGameAbort(reason);
         }
 
+        public bool SwitchTeam(int id, CTFTeam team = CTFTeam.None)
+        {
+            Debug.Assert(PlayerExists(id));
+            Debug.Assert(players[id].Team != CTFTeam.None);
+
+            if (players[id].Team == team)
+                return false;
+            
+            if (players[id].Team == CTFTeam.Red) {
+                players[id].Team = CTFTeam.Blue;
+                --RedPlayer;
+                ++BluePlayer;
+            } else {
+                players[id].Team = CTFTeam.Red;
+                --BluePlayer;
+                ++RedPlayer;
+            }
+
+            setTeam(id);
+            setPvP(id);
+            announcePlayerSwitchTeam(id);
+            warpToSpawn(id);
+            return true;
+        }
+
         #endregion
 
         #region Callback managers
@@ -422,6 +449,12 @@ namespace CGGCTF
         {
             Debug.Assert(PlayerExists(id));
             cb.TellPlayerCurrentClass(id, players[id].Class.Name);
+        }
+
+        void announcePlayerSwitchTeam(int id)
+        {
+            Debug.Assert(PlayerExists(id));
+            cb.AnnouncePlayerSwitchTeam(id, players[id].Team);
         }
 
         #endregion

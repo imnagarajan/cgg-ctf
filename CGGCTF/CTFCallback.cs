@@ -33,6 +33,7 @@ namespace CGGCTF
         public delegate void TellPlayerTeamD(int id, CTFTeam team);
         public delegate void TellPlayerSelectClassD(int id);
         public delegate void TellPlayerCurrentClassD(int id, string name);
+        public delegate void AnnouncePlayerSwitchTeamD(int id, CTFTeam team);
 
         public DecidePositionsD DecidePositions;
         public SetTeamD SetTeam;
@@ -53,5 +54,6 @@ namespace CGGCTF
         public TellPlayerTeamD TellPlayerTeam;
         public TellPlayerSelectClassD TellPlayerSelectClass;
         public TellPlayerCurrentClassD TellPlayerCurrentClass;
+        public AnnouncePlayerSwitchTeamD AnnouncePlayerSwitchTeam;
     }
 }

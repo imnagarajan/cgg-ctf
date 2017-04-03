@@ -163,6 +163,7 @@ namespace CGGCTF
             add(new Command(CTFPermissions.Play, cmdClass, "class"));
             add(new Command(CTFPermissions.Skip, cmdSkip, "skip"));
             add(new Command(CTFPermissions.Extend, cmdExtend, "extend"));
+            add(new Command(CTFPermissions.SwitchTeam, cmdTeam, "team"));
             #endregion
         }
 
@@ -981,6 +982,46 @@ namespace CGGCTF
             tplr.SendSuccessMessage("Extended time of current phase.");
         }
 
+        void cmdTeam(CommandArgs args)
+        {
+            var tplr = args.Player;
+
+            if (args.Parameters.Count != 2) {
+                tplr.SendErrorMessage("Usage: {0}team <player> <color>", Commands.Specifier);
+                return;
+            }
+
+            var color = args.Parameters[1].ToLower();
+            if (color != "red" && color != "blue") {
+                tplr.SendErrorMessage("Invalid team color.");
+                return;
+            }
+            var team = color == "red" ? CTFTeam.Red : CTFTeam.Blue;
+
+            var matches = TShock.Utils.FindPlayer(args.Parameters[0]);
+            if (matches.Count < 0) {
+                tplr.SendErrorMessage("Invalid player!");
+                return;
+            } else if (matches.Count > 1) {
+                TShock.Utils.SendMultipleMatchError(tplr, matches.Select(m => m.Name));
+                return;
+            }
+
+            var target = matches[0];
+
+            if (!target.IsLoggedIn) {
+                tplr.SendErrorMessage("{0} isn't logged in.", target.Name);
+                return;
+            } else if (!ctf.PlayerExists(target.User.ID)) {
+                tplr.SendErrorMessage("{0} hasn't joined the game.", target.Name);
+            }
+
+            if (!ctf.SwitchTeam(target.User.ID, team)) {
+                tplr.SendErrorMessage("{0} was already on {1} team.",
+                    target.Name, color);
+            }
+        }
+
         #endregion
 
         #region Messages
@@ -1183,6 +1224,14 @@ namespace CGGCTF
             cb.TellPlayerCurrentClass = delegate (int id, string cls) {
                 var tplr = TShock.Players[revID[id]];
                 tplr.SendInfoMessage("Your class is {0}.", cls);
+            };
+            cb.AnnouncePlayerSwitchTeam = delegate (int id, CTFTeam team) {
+                Debug.Assert(team != CTFTeam.None);
+                var tplr = TShock.Players[revID[id]];
+                if (team == CTFTeam.Red)
+                    announceRedMessage("{0} switched to red team.", tplr.Name);
+                else
+                    announceBlueMessage("{0} switched to blue team.", tplr.Name);
             };
             return cb;
         }
