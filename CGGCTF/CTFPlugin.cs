@@ -351,7 +351,7 @@ namespace CGGCTF
 
             var team = ctf.GetPlayerTeam(id);
 
-            if (tiles.InvalidPlace(team, args.X, args.Y, !ctf.IsPvPPhase)) {
+            if (tiles.InvalidPlace(team, args.X, args.Y, ctf.Phase == CTFPhase.Preparation)) {
                 args.Player.SetBuff(Terraria.ID.BuffID.Cursed, CTFConfig.CursedTime, true);
                 sendTile();
             } else if (args.Action == GetDataHandlers.EditAction.PlaceTile) {

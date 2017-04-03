@@ -71,6 +71,8 @@ namespace CGGCTF
 
         public CTFTeam GetPlayerTeam(int id)
         {
+            if (!PlayerExists(id))
+                return CTFTeam.None;
             return players[id].Team;
         }
 
