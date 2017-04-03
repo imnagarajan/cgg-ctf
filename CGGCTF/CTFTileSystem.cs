@@ -4,6 +4,7 @@ using System.Linq;
 using System.Diagnostics;
 
 using Terraria;
+using TShockAPI;
 using Microsoft.Xna.Framework;
 
 namespace CGGCTF
@@ -534,7 +535,18 @@ namespace CGGCTF
 
                 }
             }
-        }
 
+            // remove banned items from chests
+            for (int i = 0; i < Main.chest.Length; ++i) {
+                var chest = Main.chest[i];
+                if (chest == null)
+                    continue;
+                for (int j = 0; j < chest.item.Length; ++j) {
+                    var item = chest.item[j];
+                    if (TShock.Itembans.ItemIsBanned(item.name))
+                        chest.item[j] = new Item();
+                }
+            }
+        }
     }
 }
