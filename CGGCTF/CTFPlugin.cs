@@ -200,6 +200,8 @@ namespace CGGCTF
             pvp.SetTeam(args.Who, TeamColor.White);
             pvp.SetPvP(args.Who, false);
 
+            setDifficulty(tplr, 0);
+
             if (!tplr.IsLoggedIn) {
                 var pdata = new PlayerData(tplr);
                 blankClass.CopyToPlayerData(pdata);
@@ -1312,6 +1314,13 @@ namespace CGGCTF
                 && !tplr.HasPermission(CTFPermissions.SeeAll))
                 return false;
             return true;
+        }
+
+        void setDifficulty(TSPlayer tplr, int diff)
+        {
+            tplr.Difficulty = 0;
+            tplr.TPlayer.difficulty = 0;
+            TSPlayer.All.SendData(PacketTypes.PlayerInfo, "", tplr.Index);
         }
 
         #endregion

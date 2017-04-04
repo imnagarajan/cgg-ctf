@@ -18,6 +18,8 @@ namespace CGGCTF
         {
             playerColor[index] = color;
             Main.player[index].team = (int)playerColor[index];
+            TShock.Players[index].tempGroup = TShock.Groups.GetGroupByName(
+                color == TeamColor.Red ? "red" : "blue");
             NetMessage.SendData((int)PacketTypes.PlayerTeam, -1, -1, "", index);
         }
 
