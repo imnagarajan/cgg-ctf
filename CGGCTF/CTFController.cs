@@ -4,6 +4,7 @@ using System.Linq;
 using System.Diagnostics;
 
 using TShockAPI;
+using CGGCTF.Extensions;
 
 namespace CGGCTF
 {
@@ -281,7 +282,8 @@ namespace CGGCTF
             Phase = CTFPhase.Preparation;
             decidePositions();
             announceGameStart();
-            foreach (var id in players.Keys) {
+            var shuffledKeys = players.Keys.Shuffle();
+            foreach (var id in shuffledKeys) {
                 var player = players[id];
                 Debug.Assert(player.Team == CTFTeam.None);
                 assignTeam(id);

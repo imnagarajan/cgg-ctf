@@ -72,6 +72,7 @@
     <Compile Include="CTFUserManager.cs" />
     <Compile Include="CTFUtils.cs" />
     <Compile Include="Enums.cs" />
+    <Compile Include="Extensions\IEnumerableExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
