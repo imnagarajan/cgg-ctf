@@ -29,8 +29,8 @@ namespace CGGCTF
         public int TotalPlayer { get; private set; } = 0;
         public int OnlinePlayer { get; private set; } = 0;
         public int RedPlayer { get; private set; } = 0;
-        public int RedOnline { get; private set; } = 0;
         public int BluePlayer { get; private set; } = 0;
+        public int RedOnline { get; private set; } = 0;
         public int BlueOnline { get; private set; } = 0;
 
         public int RedFlagHolder { get; private set; } = -1;
@@ -88,10 +88,19 @@ namespace CGGCTF
             if (players[id].Team != CTFTeam.None)
                 return;
 
-            if (RedPlayer < BluePlayer) {
+            bool redLTblue, blueLTred;
+            if (CTFConfig.AssignTeamIgnoreOffline) {
+                redLTblue = RedOnline < BlueOnline;
+                blueLTred = BlueOnline < RedOnline;
+            } else {
+                redLTblue = RedPlayer < BluePlayer;
+                blueLTred = BluePlayer < RedPlayer;
+            }
+
+            if (redLTblue) {
                 players[id].Team = CTFTeam.Red;
                 ++RedPlayer;
-            } else if (BluePlayer < RedPlayer) {
+            } else if (blueLTred) {
                 players[id].Team = CTFTeam.Blue;
                 ++BluePlayer;
             } else {
@@ -146,6 +155,10 @@ namespace CGGCTF
             ++OnlinePlayer;
             if (GameIsRunning) {
                 assignTeam(id);
+                if (players[id].Team == CTFTeam.Red)
+                    ++RedOnline;
+                else
+                    ++BlueOnline;
                 informPlayerJoin(id);
                 getPlayerStarted(id);
             } else {
@@ -157,6 +170,10 @@ namespace CGGCTF
         {
             Debug.Assert(PlayerExists(id));
             Debug.Assert(GameIsRunning);
+            if (players[id].Team == CTFTeam.Red)
+                ++RedOnline;
+            else
+                ++BlueOnline;
             informPlayerRejoin(id);
             getPlayerStarted(id);
             ++OnlinePlayer;
@@ -344,10 +361,6 @@ namespace CGGCTF
         {
             Debug.Assert(PlayerExists(id));
             cb.SetTeam(id, players[id].Team);
-            if (players[id].Team == CTFTeam.Red)
-                ++RedOnline;
-            else
-                ++BlueOnline;
         }
 
         void setPvP(int id)

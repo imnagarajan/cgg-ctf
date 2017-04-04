@@ -27,8 +27,10 @@ namespace CGGCTF
         public static int PrepTime { get { return instance.PrepTime; } }
         public static int CombatTime { get { return instance.CombatTime; } }
         public static int ShutdownTime { get { return instance.ShutdownTime; } }
+
         public static int MinPlayerToStart { get { return instance.MinPlayerToStart; } }
         public static bool AbortGameOnNoPlayer { get { return instance.AbortGameOnNoPlayer; } }
+        public static bool AssignTeamIgnoreOffline { get { return instance.AssignTeamIgnoreOffline; } }
 
         public static int FlagDistance { get { return instance.FlagDistance; } }
         public static int SpawnDistance { get { return instance.SpawnDistance; } }
@@ -46,8 +48,10 @@ namespace CGGCTF
             public int PrepTime = 60 * 5;
             public int CombatTime = 60 * 15;
             public int ShutdownTime = 30;
+
             public int MinPlayerToStart = 2;
             public bool AbortGameOnNoPlayer = true;
+            public bool AssignTeamIgnoreOffline = true;
 
             public int FlagDistance = 225;
             public int SpawnDistance = 300;
