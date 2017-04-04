@@ -287,6 +287,10 @@ namespace CGGCTF
                 var player = players[id];
                 Debug.Assert(player.Team == CTFTeam.None);
                 assignTeam(id);
+                if (players[id].Team == CTFTeam.Red)
+                    ++RedOnline;
+                else
+                    ++BlueOnline;
                 getPlayerStarted(id);
             }
         }
