@@ -509,7 +509,11 @@ namespace CGGCTF
         {
             var tplr = args.Player;
             var ix = tplr.Index;
-            var id = tplr.User.ID;
+            var id = tplr.IsLoggedIn ? tplr.User.ID : -1;
+            if (tplr == TSPlayer.Server || !tplr.Active) {
+                tplr.SendErrorMessage("You must be in-game to use this command.");
+                return;
+            }
 
             if (!ctf.GameIsRunning || !ctf.PlayerExists(id)) {
                 tplr.Teleport(Main.spawnTileX * 16, (Main.spawnTileY - 3) * 16);
@@ -526,7 +530,11 @@ namespace CGGCTF
         {
             var tplr = args.Player;
             var ix = tplr.Index;
-            var id = tplr.User.ID;
+            var id = tplr.IsLoggedIn ? tplr.User.ID : -1;
+            if (tplr == TSPlayer.Server || !tplr.Active) {
+                tplr.SendErrorMessage("You must be in-game to use this command.");
+                return;
+            }
 
             if (ctf.PlayerExists(id))
                 tplr.SendErrorMessage("You are already in the game.");
@@ -538,7 +546,11 @@ namespace CGGCTF
         {
             var tplr = args.Player;
             var ix = tplr.Index;
-            var id = tplr.User.ID;
+            var id = tplr.IsLoggedIn ? tplr.User.ID : -1;
+            if (tplr == TSPlayer.Server || !tplr.Active) {
+                tplr.SendErrorMessage("You must be in-game to use this command.");
+                return;
+            }
 
             if (args.Parameters.Count == 0) {
                 tplr.SendErrorMessage("Usage: {0}class <name/list>", Commands.Specifier);
