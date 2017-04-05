@@ -562,10 +562,17 @@ namespace CGGCTF
                 tplr.SendErrorMessage("There is no game to join.");
             else if (ctf.PlayerExists(id))
                 tplr.SendErrorMessage("You are already in the game.");
-            else if (spectating[ix])
+            else if (CTFConfig.DisallowSpectatorJoin && spectating[ix]
+                && tplr.HasPermission(CTFPermissions.IgnoreSpecJoin))
                 tplr.SendErrorMessage("You are currently spectating the game.");
-            else
+            else {
+                tplr.GodMode = false;
+                if (spectating[ix]) {
+                    blankClass.CopyToPlayerData(tplr.PlayerData);
+                    tplr.PlayerData.RestoreCharacter(tplr);
+                }
                 ctf.JoinGame(id);
+            }
         }
 
         void cmdClass(CommandArgs args)
@@ -1079,6 +1086,7 @@ namespace CGGCTF
 
             // TODO - ghost the player
             spectating[ix] = true;
+            tplr.GodMode = true;
             spectateClass.CopyToPlayerData(tplr.PlayerData);
             tplr.PlayerData.RestoreCharacter(tplr);
             if (!tplr.HasPermission(CTFPermissions.IgnoreTempgroup))

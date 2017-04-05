@@ -31,6 +31,7 @@ namespace CGGCTF
         public static int MinPlayerToStart { get { return instance.MinPlayerToStart; } }
         public static bool AbortGameOnNoPlayer { get { return instance.AbortGameOnNoPlayer; } }
         public static bool AssignTeamIgnoreOffline { get { return instance.AssignTeamIgnoreOffline; } }
+        public static bool DisallowSpectatorJoin { get { return instance.DisableSpectatorJoin; } }
 
         public static int FlagDistance { get { return instance.FlagDistance; } }
         public static int SpawnDistance { get { return instance.SpawnDistance; } }
@@ -52,6 +53,7 @@ namespace CGGCTF
             public int MinPlayerToStart = 2;
             public bool AbortGameOnNoPlayer = true;
             public bool AssignTeamIgnoreOffline = true;
+            public bool DisableSpectatorJoin = true;
 
             public int FlagDistance = 225;
             public int SpawnDistance = 300;

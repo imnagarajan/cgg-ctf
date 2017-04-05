@@ -17,6 +17,7 @@ namespace CGGCTF
         public static readonly string UseAll = "ctf.useall";
         public static readonly string IgnoreInteract = "ctf.ignore.interact";
         public static readonly string IgnoreTempgroup = "ctf.ignore.tempgroup";
+        public static readonly string IgnoreSpecJoin = "ctf.ignore.specjoin";
         public static readonly string SwitchTeam = "ctf.switchteam";
     }
 }
