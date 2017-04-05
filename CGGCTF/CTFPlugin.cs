@@ -558,7 +558,9 @@ namespace CGGCTF
                 return;
             }
 
-            if (ctf.PlayerExists(id))
+            if (ctf.Phase == CTFPhase.Ended)
+                tplr.SendErrorMessage("There is no game to join.");
+            else if (ctf.PlayerExists(id))
                 tplr.SendErrorMessage("You are already in the game.");
             else if (spectating[ix])
                 tplr.SendErrorMessage("You are currently spectating the game.");
