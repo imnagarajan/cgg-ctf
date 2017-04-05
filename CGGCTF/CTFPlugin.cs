@@ -69,6 +69,9 @@ namespace CGGCTF
 
         // class editing
         CTFClass[] editingClass = new CTFClass[256];
+
+        // spectator
+        bool[] spectating = new bool[256];
         
         #region Initialization
 
@@ -91,6 +94,7 @@ namespace CGGCTF
 
             GetDataHandlers.TileEdit += onTileEdit;
             GetDataHandlers.ChestOpen += onChestOpen;
+            GetDataHandlers.ItemDrop += onItemDrop;
             GetDataHandlers.PlayerTeam += pvp.PlayerTeamHook;
             GetDataHandlers.TogglePvp += pvp.TogglePvPHook;
         }
@@ -115,6 +119,7 @@ namespace CGGCTF
 
                 GetDataHandlers.TileEdit -= onTileEdit;
                 GetDataHandlers.ChestOpen -= onChestOpen;
+                GetDataHandlers.ItemDrop -= onItemDrop;
                 GetDataHandlers.PlayerTeam -= pvp.PlayerTeamHook;
                 GetDataHandlers.TogglePvp -= pvp.TogglePvPHook;
             }
@@ -165,6 +170,7 @@ namespace CGGCTF
             add(new Command(CTFPermissions.Skip, cmdSkip, "skip"));
             add(new Command(CTFPermissions.Extend, cmdExtend, "extend"));
             add(new Command(CTFPermissions.SwitchTeam, cmdTeam, "team"));
+            add(new Command(CTFPermissions.Spectate, cmdSpectate, "spectate"));
             #endregion
         }
 
@@ -251,6 +257,7 @@ namespace CGGCTF
             displayExcept[ix] = false;
             editingClass[ix] = null;
             tplr.IsLoggedIn = false;
+            spectating[ix] = false;
 
             var pdata = new PlayerData(tplr);
             blankClass.CopyToPlayerData(pdata);
@@ -413,6 +420,18 @@ namespace CGGCTF
             }
         }
 
+        void onItemDrop(object sender, GetDataHandlers.ItemDropEventArgs args)
+        {
+            var tplr = args.Player;
+            var ix = tplr.Index;
+            var id = tplr.IsLoggedIn ? tplr.User.ID : -1;
+
+            if (spectating[ix]) {
+                if (!tplr.HasPermission(CTFPermissions.IgnoreInteract) || args.ID < 400)
+                    args.Handled = true;
+            }
+        }
+
         #endregion
 
         #region Timer Display
@@ -541,6 +560,8 @@ namespace CGGCTF
 
             if (ctf.PlayerExists(id))
                 tplr.SendErrorMessage("You are already in the game.");
+            else if (spectating[ix])
+                tplr.SendErrorMessage("You are currently spectating the game.");
             else
                 ctf.JoinGame(id);
         }
@@ -1035,6 +1056,32 @@ namespace CGGCTF
                 tplr.SendErrorMessage("{0} was already on {1} team.",
                     target.Name, color);
             }
+        }
+
+        void cmdSpectate(CommandArgs args)
+        {
+            var tplr = args.Player;
+            var ix = tplr.Index;
+            var id = tplr.IsLoggedIn ? tplr.User.ID : -1;
+
+            if (!ctf.GameIsRunning) {
+                tplr.SendErrorMessage("There is no game to spectate.");
+                return;
+            } else if (spectating[ix]) {
+                tplr.SendErrorMessage("You are already spectating.");
+                return;
+            } else if (ctf.PlayerExists(id)) {
+                tplr.SendErrorMessage("You are currently in-game.");
+                return;
+            }
+
+            // TODO - ghost the player
+            spectating[ix] = true;
+            spectateClass.CopyToPlayerData(tplr.PlayerData);
+            tplr.PlayerData.RestoreCharacter(tplr);
+            if (!tplr.HasPermission(CTFPermissions.IgnoreTempgroup))
+                tplr.tempGroup = TShock.Groups.GetGroupByName("spectate");
+            tplr.SendSuccessMessage("You are now spectating the game.");
         }
 
         #endregion

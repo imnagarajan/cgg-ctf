@@ -9,6 +9,7 @@ namespace CGGCTF
     public static class CTFPermissions
     {
         public static readonly string Play = "ctf.play";
+        public static readonly string Spectate = "ctf.spectate";
         public static readonly string Skip = "ctf.skip";
         public static readonly string Extend = "ctf.extend";
         public static readonly string Edit = "ctf.edit";
