@@ -28,7 +28,9 @@ namespace CGGCTF
 
         // ctf game controller
         CTFController ctf;
-        CTFClass blankClass;
+        CTFClass blankClass => new CTFClass();
+        CTFClass templateClass => classes.GetClass("_template") ?? blankClass;
+        CTFClass spectateClass => classes.GetClass("_spectate") ?? blankClass;
         
         // database
         CTFClassManager classes;
@@ -131,7 +133,6 @@ namespace CGGCTF
 
             #region CTF stuffs
             ctf = new CTFController(getCallback());
-            blankClass = new CTFClass();
             #endregion
 
             #region Time stuffs
@@ -636,7 +637,7 @@ namespace CGGCTF
                         string className = string.Join(" ", args.Parameters.Skip(1));
                         var cls = classes.GetClass(className);
                         if (cls == null) {
-                            cls = blankClass;
+                            cls = templateClass;
                             cls = new CTFClass() {
                                 Name = className
                             };
