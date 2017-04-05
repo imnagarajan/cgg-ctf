@@ -20,8 +20,10 @@ namespace CGGCTF
             playerColor[index] = color;
             Main.player[index].team = (int)playerColor[index];
             if (!tplr.HasPermission(CTFPermissions.IgnoreTempgroup)) {
-                tplr.tempGroup = TShock.Groups.GetGroupByName(
-                    color == TeamColor.Red ? "red" : "blue");
+                if (color == TeamColor.Red)
+                    tplr.tempGroup = TShock.Groups.GetGroupByName("red");
+                else if (color == TeamColor.Blue)
+                    tplr.tempGroup = TShock.Groups.GetGroupByName("blue");
             }
             NetMessage.SendData((int)PacketTypes.PlayerTeam, -1, -1, "", index);
         }
