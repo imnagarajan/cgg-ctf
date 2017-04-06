@@ -588,9 +588,8 @@ namespace CGGCTF
                 tplr.SendErrorMessage("You are currently spectating the game.");
             else {
                 tplr.GodMode = false;
-                if (spectating[ix]) {
-                    setPlayerClass(tplr, blankClass);
-                }
+                spectating[ix] = false;
+                setPlayerClass(tplr, blankClass);
                 ctf.JoinGame(id);
             }
         }
