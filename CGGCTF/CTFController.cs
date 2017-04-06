@@ -196,12 +196,14 @@ namespace CGGCTF
             Debug.Assert(PlayerExists(id));
             Debug.Assert(GameIsRunning);
             players[id].Online = true;
-            if (players[id].Team == CTFTeam.Red)
-                ++RedOnline;
-            else
-                ++BlueOnline;
-            informPlayerRejoin(id);
-            getPlayerStarted(id);
+            if (!players[id].Dead) {
+                if (players[id].Team == CTFTeam.Red)
+                    ++RedOnline;
+                if (players[id].Team == CTFTeam.Blue)
+                    ++BlueOnline;
+                informPlayerRejoin(id);
+                getPlayerStarted(id);
+            }
             ++OnlinePlayer;
         }
 
@@ -211,10 +213,12 @@ namespace CGGCTF
             if (GameIsRunning) {
                 if (Phase != CTFPhase.SuddenDeath)
                     players[id].Online = false;
-                if (players[id].Team == CTFTeam.Red)
-                    --RedOnline;
-                else
-                    --BlueOnline;
+                if (!players[id].Dead) {
+                    if (players[id].Team == CTFTeam.Red)
+                        --RedOnline;
+                    else if (players[id].Team == CTFTeam.Blue)
+                        --BlueOnline;
+                }
                 if (players[id].PickedClass)
                     saveInventory(id);
                 FlagDrop(id);
