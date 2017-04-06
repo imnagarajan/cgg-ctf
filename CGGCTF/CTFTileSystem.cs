@@ -543,7 +543,8 @@ namespace CGGCTF
                     continue;
                 for (int j = 0; j < chest.item.Length; ++j) {
                     var item = chest.item[j];
-                    if (TShock.Itembans.ItemIsBanned(item.name))
+                    if (TShock.Itembans.ItemIsBanned(item.name)
+                        || item.type == Terraria.ID.ItemID.InvisibilityPotion)
                         chest.item[j] = new Item();
                 }
             }
