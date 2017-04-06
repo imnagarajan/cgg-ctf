@@ -26,12 +26,14 @@ namespace CGGCTF
         public static int WaitTime { get { return instance.WaitTime; } }
         public static int PrepTime { get { return instance.PrepTime; } }
         public static int CombatTime { get { return instance.CombatTime; } }
+        public static int SuddenDeathTime { get { return instance.SuddenDeathTime; } }
         public static int ShutdownTime { get { return instance.ShutdownTime; } }
 
         public static int MinPlayerToStart { get { return instance.MinPlayerToStart; } }
         public static bool AbortGameOnNoPlayer { get { return instance.AbortGameOnNoPlayer; } }
         public static bool AssignTeamIgnoreOffline { get { return instance.AssignTeamIgnoreOffline; } }
         public static bool DisallowSpectatorJoin { get { return instance.DisableSpectatorJoin; } }
+        public static bool SuddenDeathDrops { get { return instance.SuddenDeathDrops; } }
 
         public static int FlagDistance { get { return instance.FlagDistance; } }
         public static int SpawnDistance { get { return instance.SpawnDistance; } }
@@ -48,12 +50,14 @@ namespace CGGCTF
             public int WaitTime = 61;
             public int PrepTime = 60 * 5;
             public int CombatTime = 60 * 15;
+            public int SuddenDeathTime = 60 * 5;
             public int ShutdownTime = 30;
 
             public int MinPlayerToStart = 2;
             public bool AbortGameOnNoPlayer = true;
             public bool AssignTeamIgnoreOffline = true;
             public bool DisableSpectatorJoin = true;
+            public bool SuddenDeathDrops = true;
 
             public int FlagDistance = 225;
             public int SpawnDistance = 300;

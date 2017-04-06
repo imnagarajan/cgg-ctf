@@ -17,7 +17,7 @@ namespace CGGCTF
         public delegate void DecidePositionsD();
         public delegate void SetTeamD(int id, CTFTeam team);
         public delegate void SetPvPD(int id, bool pvp);
-        public delegate void SetInventoryD(int id, PlayerData data);
+        public delegate void SetInventoryD(int id, CTFClass cls);
         public delegate PlayerData SaveInventoryD(int id);
         public delegate void WarpToSpawnD(int id, CTFTeam team);
         public delegate void InformPlayerJoinD(int id, CTFTeam team);
@@ -28,12 +28,14 @@ namespace CGGCTF
         public delegate void AnnounceFlagDropD(int id, CTFTeam team);
         public delegate void AnnounceGameStartD();
         public delegate void AnnounceCombatStartD();
+        public delegate void AnnounceSuddenDeathD();
         public delegate void AnnounceGameEndD(CTFTeam winner, int redScore, int blueScore);
         public delegate void AnnounceGameAbortD(string reason);
         public delegate void TellPlayerTeamD(int id, CTFTeam team);
         public delegate void TellPlayerSelectClassD(int id);
         public delegate void TellPlayerCurrentClassD(int id, string name);
         public delegate void AnnouncePlayerSwitchTeamD(int id, CTFTeam team);
+        public delegate void SetMediumcoreD(int id);
 
         public DecidePositionsD DecidePositions;
         public SetTeamD SetTeam;
@@ -51,9 +53,11 @@ namespace CGGCTF
         public AnnounceCombatStartD AnnounceCombatStart;
         public AnnounceGameEndD AnnounceGameEnd;
         public AnnounceGameAbortD AnnounceGameAbort;
+        public AnnounceSuddenDeathD AnnounceSuddenDeath;
         public TellPlayerTeamD TellPlayerTeam;
         public TellPlayerSelectClassD TellPlayerSelectClass;
         public TellPlayerCurrentClassD TellPlayerCurrentClass;
         public AnnouncePlayerSwitchTeamD AnnouncePlayerSwitchTeam;
+        public SetMediumcoreD SetMediumcore;
     }
 }

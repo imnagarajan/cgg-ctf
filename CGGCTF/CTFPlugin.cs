@@ -56,6 +56,8 @@ namespace CGGCTF
         int waitTime { get { return CTFConfig.WaitTime; } }
         int prepTime { get { return CTFConfig.PrepTime; } }
         int combatTime { get { return CTFConfig.CombatTime; } }
+        int sdTime { get { return CTFConfig.SuddenDeathTime; } }
+        bool sdDrops { get { return CTFConfig.SuddenDeathDrops; } }
         int shutdownTime { get { return CTFConfig.ShutdownTime;  } }
         int minPlayerToStart { get { return CTFConfig.MinPlayerToStart; } }
         bool[] displayExcept = new bool[256];
@@ -210,9 +212,9 @@ namespace CGGCTF
             setDifficulty(tplr, 0);
 
             if (!tplr.IsLoggedIn) {
-                var pdata = new PlayerData(tplr);
-                blankClass.CopyToPlayerData(pdata);
-                pdata.RestoreCharacter(tplr);
+                if (tplr.PlayerData == null)
+                    tplr.PlayerData = new PlayerData(tplr);
+                setPlayerClass(tplr, blankClass);
             }
         }
 
@@ -229,9 +231,7 @@ namespace CGGCTF
             originalChar[ix] = new PlayerData(tplr);
             originalChar[ix].CopyCharacter(tplr);
 
-            var pdata = new PlayerData(tplr);
-            blankClass.CopyToPlayerData(pdata);
-            pdata.RestoreCharacter(tplr);
+            setPlayerClass(tplr, blankClass);
 
             // TODO - make joining player sees the message for auto-login
             if (ctf.PlayerExists(id))
@@ -259,9 +259,7 @@ namespace CGGCTF
             tplr.IsLoggedIn = false;
             spectating[ix] = false;
 
-            var pdata = new PlayerData(tplr);
-            blankClass.CopyToPlayerData(pdata);
-            pdata.RestoreCharacter(tplr);
+            setPlayerClass(tplr, blankClass);
         }
 
         void onLeave(LeaveEventArgs args)
@@ -307,11 +305,21 @@ namespace CGGCTF
             var tplr = TShock.Players[ix];
             var id = tplr.IsLoggedIn ? tplr.User.ID : -1;
 
-            if (ctf.GameIsRunning && ctf.PlayerExists(id)) {
+            if (!ctf.PlayerExists(id) || ctf.PlayerDead(id))
+                return;
+
+            if (ctf.GameIsRunning) {
                 ctf.FlagDrop(id);
                 if (args.Pvp) {
                     var item = TShock.Utils.GetItemById(Terraria.ID.ItemID.RestorationPotion);
                     tplr.GiveItem(item.type, item.name, item.width, item.height, 1, 0);
+                }
+
+                if (ctf.Phase == CTFPhase.SuddenDeath) {
+                    ctf.SDDeath(id);
+                    tplr.Dead = true;
+                    tplr.RespawnTimer = 1;
+                    args.Handled = true;
                 }
             }
         }
@@ -327,7 +335,14 @@ namespace CGGCTF
                 return;
 
             var id = tplr.User.ID;
-            if (!ctf.PlayerExists(id) || !ctf.GameIsRunning)
+            if (!ctf.PlayerExists(id))
+                return;
+            if (ctf.PlayerDead(id)) {
+                giveSpectate(tplr);
+                tplr.Teleport(tplr.TileX * 16, tplr.TileY * 16);
+                return;
+            }
+            if (!ctf.GameIsRunning)
                 return;
 
             spawnPlayer(id, ctf.GetPlayerTeam(id));
@@ -463,7 +478,7 @@ namespace CGGCTF
                     return;
             }
             var ss = new StringBuilder();
-            ss.Append("{0} phase".SFormat(phase));
+            ss.Append(phase);
             ss.Append("\nTime left - {0}:{1:d2}".SFormat(timeLeft / 60, timeLeft % 60));
             ss.Append("\n");
             ss.Append("\nRed | {0} - {1} | Blue".SFormat(ctf.RedScore, ctf.BlueScore));
@@ -509,13 +524,17 @@ namespace CGGCTF
                     if (timeLeft == 60 || timeLeft == 30)
                         announceWarning("Game will start in {0}.", CTFUtils.TimeToString(timeLeft));
                 } else if (ctf.Phase == CTFPhase.Preparation) {
-                    displayTime("Preparation");
+                    displayTime("Preparation Phase");
                     if (timeLeft == 60)
                         announceWarning("{0} left for preparation phase.", CTFUtils.TimeToString(timeLeft));
                 } else if (ctf.Phase == CTFPhase.Combat) {
-                    displayTime("Combat");
+                    displayTime("Combat Phase");
                     if (timeLeft == 60 * 5 || timeLeft == 60)
                         announceWarning("{0} left for combat phase.", CTFUtils.TimeToString(timeLeft));
+                } else if (ctf.Phase == CTFPhase.SuddenDeath) {
+                    displayTime("Sudden Death");
+                    if (timeLeft == 60)
+                        announceWarning("{0} left for sudden death.", CTFUtils.TimeToString(timeLeft));
                 } else if (ctf.Phase == CTFPhase.Ended) {
                     if (timeLeft == 20 || timeLeft == 10)
                         announceWarning("Server will shut down in {0}.", CTFUtils.TimeToString(timeLeft));
@@ -560,6 +579,8 @@ namespace CGGCTF
 
             if (ctf.Phase == CTFPhase.Ended)
                 tplr.SendErrorMessage("There is no game to join.");
+            else if (ctf.Phase == CTFPhase.SuddenDeath)
+                tplr.SendErrorMessage("Can't join in sudden death phase.");
             else if (ctf.PlayerExists(id))
                 tplr.SendErrorMessage("You are already in the game.");
             else if (CTFConfig.DisallowSpectatorJoin && spectating[ix]
@@ -568,8 +589,7 @@ namespace CGGCTF
             else {
                 tplr.GodMode = false;
                 if (spectating[ix]) {
-                    blankClass.CopyToPlayerData(tplr.PlayerData);
-                    tplr.PlayerData.RestoreCharacter(tplr);
+                    setPlayerClass(tplr, blankClass);
                 }
                 ctf.JoinGame(id);
             }
@@ -680,9 +700,7 @@ namespace CGGCTF
                         tplr.SendInfoMessage("Also try: {0}class hp/mana/desc/name", Commands.Specifier);
 
                         timeLeft = -1;
-                        cls.CopyToPlayerData(tplr.PlayerData);
-                        tplr.PlayerData.RestoreCharacter(tplr);
-                        editingClass[ix] = cls;
+                        setPlayerClass(tplr, cls);
                     }
                     break;
                 #endregion
@@ -703,8 +721,7 @@ namespace CGGCTF
                         editingClass[ix].CopyFromPlayerData(tplr.PlayerData);
                         classes.SaveClass(editingClass[ix]);
 
-                        blankClass.CopyToPlayerData(tplr.PlayerData);
-                        tplr.PlayerData.RestoreCharacter(tplr);
+                        setPlayerClass(tplr, blankClass);
 
                         tplr.SendSuccessMessage("Edited class {0}.", editingClass[ix].Name);
                         editingClass[ix] = null;
@@ -727,8 +744,7 @@ namespace CGGCTF
                             return;
                         }
 
-                        blankClass.CopyToPlayerData(tplr.PlayerData);
-                        tplr.PlayerData.RestoreCharacter(tplr);
+                        setPlayerClass(tplr, blankClass);
 
                         tplr.SendInfoMessage("Canceled editing class {0}.", editingClass[ix].Name);
                         editingClass[ix] = null;
@@ -1084,11 +1100,7 @@ namespace CGGCTF
                 return;
             }
 
-            // TODO - ghost the player
-            spectating[ix] = true;
-            tplr.GodMode = true;
-            spectateClass.CopyToPlayerData(tplr.PlayerData);
-            tplr.PlayerData.RestoreCharacter(tplr);
+            giveSpectate(tplr);
             if (!tplr.HasPermission(CTFPermissions.IgnoreTempgroup))
                 tplr.tempGroup = TShock.Groups.GetGroupByName("spectate");
             tplr.SendSuccessMessage("You are now spectating the game.");
@@ -1163,11 +1175,9 @@ namespace CGGCTF
             cb.SetPvP = delegate (int id, bool pv) {
                 pvp.SetPvP(revID[id], pv);
             };
-            cb.SetInventory = delegate (int id, PlayerData inventory) {
-                if (inventory == null)
-                    return;
+            cb.SetInventory = delegate (int id, CTFClass cls) {
                 var tplr = TShock.Players[revID[id]];
-                inventory.RestoreCharacter(tplr);
+                setPlayerClass(tplr, cls);
             };
             cb.SaveInventory = delegate (int id) {
                 var tplr = TShock.Players[revID[id]];
@@ -1258,6 +1268,17 @@ namespace CGGCTF
                 announceMessage("First team to get 2 points more than the other team wins!");
                 tiles.RemoveMiddleBlock();
                 timeLeft = combatTime;
+            };
+            cb.AnnounceSuddenDeath = delegate () {
+                announceMessage("Sudden Death has started! Deaths are permanent!");
+                announceMessage("First team to touch other team's flag wins!");
+                timeLeft = sdTime;
+
+            };
+            cb.SetMediumcore = delegate (int id) {
+                var tplr = TShock.Players[revID[id]];
+                if (sdDrops)
+                    setDifficulty(tplr, 1);
             };
             cb.AnnounceGameEnd = delegate (CTFTeam winner, int redScore, int blueScore) {
                 displayBlank();
@@ -1376,9 +1397,25 @@ namespace CGGCTF
 
         void setDifficulty(TSPlayer tplr, int diff)
         {
-            tplr.Difficulty = 0;
-            tplr.TPlayer.difficulty = 0;
+            tplr.Difficulty = diff;
+            tplr.TPlayer.difficulty = (byte)diff;
             TSPlayer.All.SendData(PacketTypes.PlayerInfo, "", tplr.Index);
+        }
+
+        void setPlayerClass(TSPlayer tplr, CTFClass cls)
+        {
+            cls.CopyToPlayerData(tplr.PlayerData);
+            tplr.PlayerData.RestoreCharacter(tplr);
+        }
+
+        void giveSpectate(TSPlayer tplr)
+        {
+            // TODO - ghost the player
+            var ix = tplr.Index;
+            spectating[ix] = true;
+            tplr.GodMode = true;
+            setDifficulty(tplr, 0);
+            setPlayerClass(tplr, spectateClass);
         }
 
         #endregion

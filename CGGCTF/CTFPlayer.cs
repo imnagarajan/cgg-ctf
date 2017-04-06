@@ -11,6 +11,8 @@ namespace CGGCTF
     {
         public CTFTeam Team;
         public CTFClass Class;
+        public bool Online;
+        public bool Dead;
         public bool PickedClass {
             get {
                 return Class != null;
@@ -22,6 +24,8 @@ namespace CGGCTF
         {
             Team = CTFTeam.None;
             Class = null;
+            Online = true;
+            Dead = false;
             Data = new PlayerData(null);
         }
     }

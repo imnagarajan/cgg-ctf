@@ -11,6 +11,7 @@ namespace CGGCTF
         Lobby,
         Preparation,
         Combat,
+        SuddenDeath,
         Ended
     }
 
