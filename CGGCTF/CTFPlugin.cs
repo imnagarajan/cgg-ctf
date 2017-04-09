@@ -1413,6 +1413,7 @@ namespace CGGCTF
             var ix = tplr.Index;
             spectating[ix] = true;
             tplr.GodMode = true;
+            pvp.SetPvP(ix, false);
             setDifficulty(tplr, 0);
             setPlayerClass(tplr, spectateClass);
         }
