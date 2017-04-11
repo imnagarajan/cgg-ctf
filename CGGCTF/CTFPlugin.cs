@@ -687,9 +687,7 @@ namespace CGGCTF
                         var cls = classes.GetClass(className);
                         if (cls == null) {
                             cls = templateClass;
-                            cls = new CTFClass() {
-                                Name = className
-                            };
+                            cls.Name = className;
                             tplr.SendSuccessMessage("You are adding new class {0}.", cls.Name);
                         } else {
                             tplr.SendSuccessMessage("You may now start editing class {0}.", cls.Name);
@@ -700,6 +698,7 @@ namespace CGGCTF
 
                         timeLeft = -1;
                         setPlayerClass(tplr, cls);
+                        editingClass[ix] = cls;
                     }
                     break;
                 #endregion
