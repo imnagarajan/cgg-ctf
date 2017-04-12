@@ -1458,13 +1458,21 @@ namespace CGGCTF
                 foreach (var tplr in TShock.Players) {
                     if (tplr == null)
                         continue;
+                    var ix = tplr.Index;
                     var id = tplr.IsLoggedIn ? tplr.User.ID : -1;
+                    var cusr = loadedUser[ix];
                     if (!ctf.PlayerExists(id))
                         continue;
-                    if (ctf.GetPlayerTeam(id) == winner)
+                    if (ctf.GetPlayerTeam(id) == winner) {
+                        ++cusr.Wins;
                         giveCoins(tplr, CTFConfig.GainWin);
-                    else
+                    } else if (winner != CTFTeam.None) {
+                        ++cusr.Loses;
                         giveCoins(tplr, CTFConfig.GainLose);
+                    } else {
+                        ++cusr.Draws;
+                        giveCoins(tplr, CTFConfig.GainDraw);
+                    }
                 }
                 pvp.Enforced = false;
             };

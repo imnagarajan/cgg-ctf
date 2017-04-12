@@ -15,6 +15,7 @@ namespace CGGCTF
         public int KDRatio { get { return Deaths == 0 ? Kills : Kills / Deaths; } }
         public int Wins = 0;
         public int Loses = 0;
+        public int Draws = 0;
         public int WLRatio { get { return Loses == 0 ? Wins : Wins / Loses; } }
         public List<int> Classes = new List<int>();
 

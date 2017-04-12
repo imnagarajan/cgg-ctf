@@ -51,6 +51,7 @@ namespace CGGCTF
         public static int GainCapture { get { return instance.GainCapture; } }
         public static int GainWin { get { return instance.GainWin; } }
         public static int GainLose { get { return instance.GainLose; } }
+        public static int GainDraw { get { return instance.GainDraw; } }
 
         public static string ClassListHave { get { return instance.ClassListHave; } }
         public static string ClassListDontHave { get { return instance.ClassListDontHave; } }
@@ -86,6 +87,7 @@ namespace CGGCTF
             public int GainCapture = 50;
             public int GainWin = 30;
             public int GainLose = 10;
+            public int GainDraw = 10;
 
             public string ClassListHave = "{0}: {1}{3}";
             public string ClassListDontHave = "{0}: {1} ({2}){3}";

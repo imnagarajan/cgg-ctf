@@ -47,6 +47,7 @@ namespace CGGCTF
                 new SqlColumn("Assists", MySqlDbType.Int32),
                 new SqlColumn("Wins", MySqlDbType.Int32),
                 new SqlColumn("Loses", MySqlDbType.Int32),
+                new SqlColumn("Draws", MySqlDbType.Int32),
                 new SqlColumn("Classes", MySqlDbType.Text)));
         }
 
@@ -63,16 +64,17 @@ namespace CGGCTF
                             Assists = reader.Get<int>("Assists"),
                             Wins = reader.Get<int>("Wins"),
                             Loses = reader.Get<int>("Loses"),
+                            Draws = reader.Get<int>("Draws"),
                             Classes = ParseClasses(reader.Get<string>("Classes"))
                         };
                     } else {
                         var ret = new CTFUser();
                         ret.ID = id;
                         if (db.Query("INSERT INTO ctfusers (ID, Coins, Kills, " +
-                            "Deaths, Assists, Wins, Loses, Classes) " +
-                            "VALUES (@0, @1, @2, @3, @4, @5, @6, @7)",
+                            "Deaths, Assists, Wins, Loses, Draws, Classes) " +
+                            "VALUES (@0, @1, @2, @3, @4, @5, @6, @7, @8)",
                             ret.ID, ret.Coins, ret.Kills, ret.Deaths,
-                            ret.Assists, ret.Wins, ret.Loses,
+                            ret.Assists, ret.Wins, ret.Loses, ret.Draws,
                             ClassesToString(ret.Classes)) != 0)
                             return ret;
                     }
@@ -87,9 +89,9 @@ namespace CGGCTF
         {
             try {
                 db.Query("UPDATE ctfusers SET Coins = @0, Kills = @1, Deaths = @2, " +
-                    "Assists = @3, Wins = @4, Loses = @5, Classes = @6 WHERE ID = @7",
+                    "Assists = @3, Wins = @4, Loses = @5, Draws = @6, Classes = @7 WHERE ID = @7",
                     user.Coins, user.Kills, user.Deaths, user.Assists,
-                    user.Wins, user.Loses, ClassesToString(user.Classes), user.ID);
+                    user.Wins, user.Loses, user.Draws, ClassesToString(user.Classes), user.ID);
                 return true;
             } catch (Exception ex) {
                 TShock.Log.Error(ex.ToString());
