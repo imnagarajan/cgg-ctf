@@ -1539,13 +1539,18 @@ namespace CGGCTF
                     continue;
                 if (canUseClass(tplr, cls)) {
                     bought.Append("\n" + string.Format(CTFConfig.ClassListHave,
-                        cls.Name, cls.Description));
+                        cls.Name, cls.Description, cls.Sell
+                        ? (cls.Price == 0 ? "Free"
+                        : CTFUtils.Pluralize(cls.Price, singular, plural))
+                        : "Locked",
+                        cls.Hidden ? CTFConfig.ClassListHidden : ""));
                 } else {
                     notyet.Append("\n" + string.Format(CTFConfig.ClassListDontHave,
                         cls.Name, cls.Description, cls.Sell
                         ? (cls.Price == 0 ? "Free"
                         : CTFUtils.Pluralize(cls.Price, singular, plural))
-                        : "Locked"));
+                        : "Locked",
+                        cls.Hidden ? CTFConfig.ClassListHidden : ""));
                 }
             }
 

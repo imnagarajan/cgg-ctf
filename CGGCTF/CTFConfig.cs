@@ -47,6 +47,7 @@ namespace CGGCTF
 
         public static string ClassListHave { get { return instance.ClassListHave; } }
         public static string ClassListDontHave { get { return instance.ClassListDontHave; } }
+        public static string ClassListHidden { get { return instance.ClassListHidden; } }
 
         class ActualConfig
         {
@@ -72,8 +73,9 @@ namespace CGGCTF
             public string MoneySingularName = "Coin";
             public string MoneyPluralName = "Coins";
 
-            public string ClassListHave = "{0}: {1}";
-            public string ClassListDontHave = "{0}: {1} ({2})";
+            public string ClassListHave = "{0}: {1}{3}";
+            public string ClassListDontHave = "{0}: {1} ({2}){3}";
+            public string ClassListHidden = " (Hidden)";
 
             public void Write(string path)
             {
