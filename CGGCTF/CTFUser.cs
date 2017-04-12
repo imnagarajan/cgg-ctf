@@ -17,5 +17,16 @@ namespace CGGCTF
         public int Loses = 0;
         public int WLRatio { get { return Loses == 0 ? Wins : Wins / Loses; } }
         public List<int> Classes = new List<int>();
+
+        public bool HasClass(int cls)
+        {
+            return Classes.Contains(cls);
+        }
+
+        public void AddClass(int cls)
+        {
+            if (!HasClass(cls))
+                Classes.Add(cls);
+        }
     }
 }
