@@ -45,6 +45,13 @@ namespace CGGCTF
         public static string MoneySingularName { get { return instance.MoneySingularName; } }
         public static string MoneyPluralName { get { return instance.MoneyPluralName; } }
 
+        public static int GainKill { get { return instance.GainKill; } }
+        public static int GainDeath { get { return instance.GainDeath; } }
+        public static int GainAssist { get { return instance.GainAssist; } }
+        public static int GainCapture { get { return instance.GainCapture; } }
+        public static int GainWin { get { return instance.GainWin; } }
+        public static int GainLose { get { return instance.GainLose; } }
+
         public static string ClassListHave { get { return instance.ClassListHave; } }
         public static string ClassListDontHave { get { return instance.ClassListDontHave; } }
         public static string ClassListHidden { get { return instance.ClassListHidden; } }
@@ -72,6 +79,13 @@ namespace CGGCTF
 
             public string MoneySingularName = "Coin";
             public string MoneyPluralName = "Coins";
+
+            public int GainKill = 10;
+            public int GainDeath = -5;
+            public int GainAssist = 5;
+            public int GainCapture = 50;
+            public int GainWin = 30;
+            public int GainLose = 10;
 
             public string ClassListHave = "{0}: {1}{3}";
             public string ClassListDontHave = "{0}: {1} ({2}){3}";

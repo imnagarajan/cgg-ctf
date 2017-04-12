@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Timers;
+using System.IO;
 using System.Reflection;
 using System.Diagnostics;
 
 using Terraria;
 using TerrariaApi.Server;
+using Terraria.DataStructures;
 using TShockAPI;
 using TShockAPI.Hooks;
 
@@ -74,6 +76,9 @@ namespace CGGCTF
 
         // spectator
         bool[] spectating = new bool[256];
+
+        // assist list
+        List<int>[] didDamage = new List<int>[256];
         
         #region Initialization
 
@@ -93,6 +98,7 @@ namespace CGGCTF
             GetDataHandlers.PlayerSpawn += onSpawn;
             ServerApi.Hooks.NetSendData.Register(this, onSendData);
             GetDataHandlers.PlayerSlot += onSlot;
+            ServerApi.Hooks.NetGetData.Register(this, onGetData);
 
             GetDataHandlers.TileEdit += onTileEdit;
             GetDataHandlers.ChestOpen += onChestOpen;
@@ -118,6 +124,7 @@ namespace CGGCTF
                 GetDataHandlers.PlayerSpawn -= onSpawn;
                 ServerApi.Hooks.NetSendData.Deregister(this, onSendData);
                 GetDataHandlers.PlayerSlot -= onSlot;
+                ServerApi.Hooks.NetGetData.Deregister(this, onGetData);
 
                 GetDataHandlers.TileEdit -= onTileEdit;
                 GetDataHandlers.ChestOpen -= onChestOpen;
@@ -311,7 +318,9 @@ namespace CGGCTF
                 return;
 
             if (ctf.GameIsRunning) {
+
                 ctf.FlagDrop(id);
+
                 if (args.Pvp) {
                     var item = TShock.Utils.GetItemById(Terraria.ID.ItemID.RestorationPotion);
                     tplr.GiveItem(item.type, item.name, item.width, item.height, 1, 0);
@@ -446,6 +455,56 @@ namespace CGGCTF
             if (spectating[ix]) {
                 if (!tplr.HasPermission(CTFPermissions.IgnoreInteract) || args.ID < 400)
                     args.Handled = true;
+            }
+        }
+
+        void onGetData(GetDataEventArgs args)
+        {
+            if (args.Handled)
+                return;
+
+            if (args.MsgID == PacketTypes.PlayerDeathV2
+                || args.MsgID == PacketTypes.PlayerHurtV2) {
+                using (var reader = new BinaryReader(new MemoryStream(args.Msg.readBuffer, args.Index, args.Length))) {
+
+                    var ix = reader.ReadByte();
+                    var deathReason = reader.ReadByte();
+                    if ((deathReason & 1) == 0)
+                        return;
+                    var kix = reader.ReadInt16();
+
+                    var tplr = TShock.Players[ix];
+                    var id = tplr.IsLoggedIn ? tplr.User.ID : -1;
+                    var cusr = loadedUser[ix];
+                    var ktplr = TShock.Players[kix];
+                    var kcuser = loadedUser[kix];
+
+                    if (!ctf.PlayerExists(id) || ctf.PlayerDead(id) || !ctf.GameIsRunning)
+                        return;
+
+                    if (didDamage[ix] == null)
+                        didDamage[ix] = new List<int>(1);
+                    if (!didDamage[ix].Contains(kix))
+                        didDamage[ix].Add(kix);
+
+                    if (args.MsgID == PacketTypes.PlayerDeathV2) {
+
+                        ++kcuser.Kills;
+                        giveCoins(ktplr, CTFConfig.GainKill);
+                        foreach (var aix in didDamage[ix]) {
+                            if (aix == kix)
+                                continue;
+                            var atplr = TShock.Players[aix];
+                            var acusr = loadedUser[aix];
+                            ++acusr.Assists;
+                            giveCoins(ktplr, CTFConfig.GainAssist);
+                        }
+                        ++cusr.Deaths;
+                        giveCoins(tplr, CTFConfig.GainDeath);
+                        didDamage[ix] = null;
+
+                    }
+                }
             }
         }
 
@@ -1336,6 +1395,7 @@ namespace CGGCTF
             cb.AnnounceCaptureFlag = delegate (int id, CTFTeam team, int redScore, int blueScore) {
                 Debug.Assert(team != CTFTeam.None);
                 var tplr = TShock.Players[revID[id]];
+                giveCoins(tplr, CTFConfig.GainCapture);
                 removeCrown(tplr);
                 displayTime();
                 if (team == CTFTeam.Red) {
@@ -1395,6 +1455,17 @@ namespace CGGCTF
                     announceBlueMessage("Congratulations to blue team!");
                 else
                     announceMessage("Game ended in a draw.");
+                foreach (var tplr in TShock.Players) {
+                    if (tplr == null)
+                        continue;
+                    var id = tplr.IsLoggedIn ? tplr.User.ID : -1;
+                    if (!ctf.PlayerExists(id))
+                        continue;
+                    if (ctf.GetPlayerTeam(id) == winner)
+                        giveCoins(tplr, CTFConfig.GainWin);
+                    else
+                        giveCoins(tplr, CTFConfig.GainLose);
+                }
                 pvp.Enforced = false;
             };
             cb.AnnounceGameAbort = delegate (string reason) {
@@ -1567,6 +1638,29 @@ namespace CGGCTF
             }
 
             return finalmsg.ToString();
+        }
+
+        void giveCoins(TSPlayer tplr, int amount, bool alert = true)
+        {
+            if (!tplr.HasPermission(CTFPermissions.BalGain))
+                return;
+
+            var ix = tplr.Index;
+            var id = tplr.IsLoggedIn ? tplr.User.ID : -1;
+            var cusr = loadedUser[ix];
+
+            var old = cusr.Coins;
+            cusr.Coins += amount;
+            if (cusr.Coins < 0)
+                cusr.Coins = 0;
+            var diff = cusr.Coins - old;
+
+            saveUser(cusr);
+            if (alert && diff != 0) {
+                tplr.SendInfoMessage("You {0} {1}!",
+                    diff < 0 ? "lost" : "got",
+                    CTFUtils.Pluralize(Math.Abs(diff), singular, plural));
+            }
         }
 
         #endregion
