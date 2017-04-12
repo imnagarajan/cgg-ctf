@@ -621,38 +621,8 @@ namespace CGGCTF
                             return;
                         }
 
-                        var list = classes.GetClasses();
-                        var bought = new StringBuilder();
-                        var notyet = new StringBuilder();
-                        foreach (var cls in list) {
-                            if (!canSeeClass(tplr, cls))
-                                continue;
-                            if (canUseClass(tplr, cls)) {
-                                bought.Append(string.Format("\n{0}: {1}",
-                                    cls.Name, cls.Description));
-                            } else {
-                                notyet.Append(string.Format("\n{0}: {1} ({2})",
-                                    cls.Name, cls.Description, cls.Sell
-                                    ? (cls.Price == 0 ? "Free" 
-                                    : CTFUtils.Pluralize(cls.Price, singular, plural))
-                                    : "Locked"));
-                            }
-                        }
-
-                        var finalmsg = new StringBuilder();
-                        if (bought.Length != 0) {
-                            finalmsg.Append("- Classes you have -");
-                            finalmsg.Append(bought);
-                        }
-                        if (bought.Length != 0 && notyet.Length != 0)
-                            finalmsg.Append("\n\n");
-                        if (notyet.Length != 0) {
-                            finalmsg.Append("- Classes you do not have -");
-                            finalmsg.Append(notyet);
-                        }
-
                         displayExcept[ix] = true;
-                        displayMessage(tplr, finalmsg);
+                        displayMessage(tplr, generateClassList(tplr));
 
                         tplr.SendInfoMessage("Turn off your minimap to see class list.");
                         tplr.SendInfoMessage("Type {0}class list again to turn off.", Commands.Specifier);
@@ -724,6 +694,9 @@ namespace CGGCTF
                         tplr.SendSuccessMessage("Edited class {0}.", editingClass[ix].Name);
                         editingClass[ix] = null;
                         timeLeft = ctf.OnlinePlayer >= CTFConfig.MinPlayerToStart ? waitTime : 0;
+
+                        if (displayExcept[ix])
+                            displayMessage(tplr, generateClassList(tplr));
 
                     }
                     break;
@@ -1013,6 +986,9 @@ namespace CGGCTF
                         cusr.AddClass(cls.ID);
                         tplr.SendSuccessMessage("You bought class {0}.", cls.Name);
                         saveUser(cusr);
+
+                        if (displayExcept[ix])
+                            displayMessage(tplr, generateClassList(tplr));
 
                     }
                     break;
@@ -1470,6 +1446,41 @@ namespace CGGCTF
         void saveUser(CTFUser cusr)
         {
             users.SaveUser(cusr);
+        }
+
+        string generateClassList(TSPlayer tplr)
+        {
+            var list = classes.GetClasses();
+            var bought = new StringBuilder();
+            var notyet = new StringBuilder();
+            foreach (var cls in list) {
+                if (!canSeeClass(tplr, cls))
+                    continue;
+                if (canUseClass(tplr, cls)) {
+                    bought.Append("\n" + string.Format(CTFConfig.ClassListHave,
+                        cls.Name, cls.Description));
+                } else {
+                    notyet.Append("\n" + string.Format(CTFConfig.ClassListDontHave,
+                        cls.Name, cls.Description, cls.Sell
+                        ? (cls.Price == 0 ? "Free"
+                        : CTFUtils.Pluralize(cls.Price, singular, plural))
+                        : "Locked"));
+                }
+            }
+
+            var finalmsg = new StringBuilder();
+            if (bought.Length != 0) {
+                finalmsg.Append("- Classes you have -");
+                finalmsg.Append(bought);
+            }
+            if (bought.Length != 0 && notyet.Length != 0)
+                finalmsg.Append("\n\n");
+            if (notyet.Length != 0) {
+                finalmsg.Append("- Classes you do not have -");
+                finalmsg.Append(notyet);
+            }
+
+            return finalmsg.ToString();
         }
 
         #endregion

@@ -42,8 +42,11 @@ namespace CGGCTF
         public static int RainTimer { get { return instance.RainTimer; } }
         public static int CursedTime { get { return instance.CursedTime; } }
 
-        public static string MoneySingularName { get { return instance.MoneySingularName;  } }
-        public static string MoneyPluralName { get { return instance.MoneyPluralName;  } }
+        public static string MoneySingularName { get { return instance.MoneySingularName; } }
+        public static string MoneyPluralName { get { return instance.MoneyPluralName; } }
+
+        public static string ClassListHave { get { return instance.ClassListHave; } }
+        public static string ClassListDontHave { get { return instance.ClassListDontHave; } }
 
         class ActualConfig
         {
@@ -68,6 +71,9 @@ namespace CGGCTF
 
             public string MoneySingularName = "Coin";
             public string MoneyPluralName = "Coins";
+
+            public string ClassListHave = "{0}: {1}";
+            public string ClassListDontHave = "{0}: {1} ({2})";
 
             public void Write(string path)
             {
