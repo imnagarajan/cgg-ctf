@@ -20,6 +20,10 @@ namespace CGGCTF
         public static readonly string ClassUseAll = "ctf.class.useall";
         public static readonly string ClassEdit = "ctf.class.edit";
 
+        public static readonly string BalCheck = "ctf.bal.check.self";
+        public static readonly string BalCheckOther = "ctf.bal.check.others";
+        public static readonly string BalEdit = "ctf.bal.edit";
+
         public static readonly string IgnoreInteract = "ctf.ignore.interact";
         public static readonly string IgnoreTempgroup = "ctf.ignore.tempgroup";
         public static readonly string IgnoreSpecJoin = "ctf.ignore.specjoin";

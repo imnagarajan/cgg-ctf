@@ -173,6 +173,7 @@ namespace CGGCTF
             add(new Command(CTFPermissions.Extend, cmdExtend, "extend"));
             add(new Command(CTFPermissions.SwitchTeam, cmdTeam, "team"));
             add(new Command(CTFPermissions.Spectate, cmdSpectate, "spectate"));
+            add(new Command(CTFPermissions.BalCheck, cmdBalance, "balance", "bal"));
             #endregion
         }
 
@@ -260,6 +261,7 @@ namespace CGGCTF
             spectating[ix] = false;
 
             setPlayerClass(tplr, blankClass);
+            revID.Remove(id);
         }
 
         void onLeave(LeaveEventArgs args)
@@ -331,7 +333,7 @@ namespace CGGCTF
 
             var ix = args.Player;
             var tplr = TShock.Players[ix];
-            if (!tplr.Active || !tplr.IsLoggedIn)
+            if (!tplr.Active || !tplr.RealPlayer || !tplr.IsLoggedIn)
                 return;
 
             var id = tplr.User.ID;
@@ -417,7 +419,7 @@ namespace CGGCTF
             int ix = args.PlayerId;
             var tplr = TShock.Players[ix];
 
-            if (!tplr.Active)
+            if (!tplr.Active || !tplr.RealPlayer)
                 return;
 
             if (args.Slot == crownNetSlot) {
@@ -551,7 +553,7 @@ namespace CGGCTF
             var tplr = args.Player;
             var ix = tplr.Index;
             var id = tplr.IsLoggedIn ? tplr.User.ID : -1;
-            if (tplr == TSPlayer.Server || !tplr.Active) {
+            if (tplr == TSPlayer.Server || !tplr.Active || !tplr.RealPlayer) {
                 tplr.SendErrorMessage("You must be in-game to use this command.");
                 return;
             }
@@ -572,7 +574,7 @@ namespace CGGCTF
             var tplr = args.Player;
             var ix = tplr.Index;
             var id = tplr.IsLoggedIn ? tplr.User.ID : -1;
-            if (tplr == TSPlayer.Server || !tplr.Active) {
+            if (tplr == TSPlayer.Server || !tplr.Active || !tplr.RealPlayer) {
                 tplr.SendErrorMessage("You must be in-game to use this command.");
                 return;
             }
@@ -599,7 +601,7 @@ namespace CGGCTF
             var tplr = args.Player;
             var ix = tplr.Index;
             var id = tplr.IsLoggedIn ? tplr.User.ID : -1;
-            if (tplr == TSPlayer.Server || !tplr.Active) {
+            if (tplr == TSPlayer.Server || !tplr.Active || !tplr.RealPlayer) {
                 tplr.SendErrorMessage("You must be in-game to use this command.");
                 return;
             }
@@ -695,8 +697,10 @@ namespace CGGCTF
                         editingClass[ix] = null;
                         timeLeft = ctf.OnlinePlayer >= CTFConfig.MinPlayerToStart ? waitTime : 0;
 
-                        if (displayExcept[ix])
-                            displayMessage(tplr, generateClassList(tplr));
+                        foreach (var tp in TShock.Players) {
+                            if (tp != null && displayExcept[tp.Index])
+                                displayMessage(tp, generateClassList(tp));
+                        }
 
                     }
                     break;
@@ -1128,6 +1132,83 @@ namespace CGGCTF
             if (!tplr.HasPermission(CTFPermissions.IgnoreTempgroup))
                 tplr.tempGroup = TShock.Groups.GetGroupByName("spectate");
             tplr.SendSuccessMessage("You are now spectating the game.");
+        }
+
+        void cmdBalance(CommandArgs args)
+        {
+            var tplr = args.Player;
+            var ix = tplr.Index;
+            var id = tplr.IsLoggedIn ? tplr.User.ID : -1;
+            var cusr = loadedUser[ix];
+
+            #region Check self
+            if (args.Parameters.Count == 0
+                || (!tplr.HasPermission(CTFPermissions.BalCheckOther)
+                && !tplr.HasPermission(CTFPermissions.BalEdit))) {
+
+                tplr.SendInfoMessage("You have {0}.",
+                    CTFUtils.Pluralize(cusr.Coins, singular, plural));
+            #endregion
+            #region Add balance
+            } else if (args.Parameters[0].ToLower() == "add") {
+
+                if (!tplr.HasPermission(CTFPermissions.BalEdit)) {
+                    tplr.SendErrorMessage("You don't have access to this command.");
+                    return;
+                } else if (args.Parameters.Count < 3) {
+                    tplr.SendErrorMessage("Usage: {0}balance add <name> <amount>", Commands.Specifier);
+                    return;
+                }
+
+                int amount;
+                if (!int.TryParse(args.Parameters[args.Parameters.Count - 1], out amount)) {
+                    tplr.SendErrorMessage("Invalid amount");
+                    return;
+                }
+
+                var nameParams = new List<string>(args.Parameters.Count - 2);
+                for (int i = 1; i < args.Parameters.Count - 1; ++i)
+                    nameParams.Add(args.Parameters[i]);
+                var plrName = string.Join(" ", nameParams);
+
+                var targetTuser = TShock.Users.GetUserByName(plrName);
+                if (targetTuser == null) {
+                    tplr.SendErrorMessage("User {0} doesn't exist.", plrName);
+                    return;
+                }
+
+                CTFUser targetCuser;
+                if (revID.ContainsKey(targetTuser.ID))
+                    targetCuser = loadedUser[revID[targetTuser.ID]];
+                else
+                    targetCuser = users.GetUser(targetTuser.ID);
+
+                targetCuser.Coins += amount;
+                tplr.SendSuccessMessage("Gave {0} {1}.", targetTuser.Name,
+                    CTFUtils.Pluralize(amount, singular, plural));
+                saveUser(targetCuser);
+            #endregion
+            #region Check others
+            } else {
+
+                var plrName = string.Join(" ", args.Parameters);
+                var targetTuser = TShock.Users.GetUserByName(plrName);
+                if (targetTuser == null) {
+                    tplr.SendErrorMessage("User {0} doesn't exist.", plrName);
+                    return;
+                }
+
+                CTFUser targetCuser;
+                if (revID.ContainsKey(targetTuser.ID))
+                    targetCuser = loadedUser[revID[targetTuser.ID]];
+                else
+                    targetCuser = users.GetUser(targetTuser.ID);
+
+                tplr.SendInfoMessage("{0} has {1}.", targetTuser.Name,
+                    CTFUtils.Pluralize(targetCuser.Coins, singular, plural));
+
+            }
+            #endregion
         }
 
         #endregion
