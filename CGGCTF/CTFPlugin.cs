@@ -266,6 +266,7 @@ namespace CGGCTF
             editingClass[ix] = null;
             tplr.IsLoggedIn = false;
             spectating[ix] = false;
+            didDamage[ix] = null;
 
             setPlayerClass(tplr, blankClass);
             revID.Remove(id);
@@ -477,9 +478,10 @@ namespace CGGCTF
                     var cusr = loadedUser[ix];
 
                     var ktplr = TShock.Players[kix];
+                    var kid = ktplr.IsLoggedIn ? ktplr.User.ID : -1;
                     var kcuser = loadedUser[kix];
 
-                    if (!ctf.PlayerExists(id) || ctf.PlayerDead(id) || !ctf.GameIsRunning)
+                    if (!ctf.GameIsRunning || !ctf.PlayerExists(id) || !ctf.PlayerExists(kid))
                         return;
 
                     if (didDamage[ix] == null)
@@ -493,18 +495,25 @@ namespace CGGCTF
 
                     var ix = reader.ReadByte();
                     var deathReason = reader.ReadByte();
-                    int kix = -1;
-                    if ((deathReason & 1) != 0) {
-                        kix = reader.ReadInt16();
-                        var ktplr = TShock.Players[kix];
-                        var kcuser = loadedUser[kix];
-                        ++kcuser.Kills;
-                        giveCoins(ktplr, CTFConfig.GainKill);
-                    }
 
                     var tplr = TShock.Players[ix];
                     var id = tplr.IsLoggedIn ? tplr.User.ID : -1;
                     var cusr = loadedUser[ix];
+
+                    if (!ctf.GameIsRunning || !ctf.PlayerExists(id) || ctf.PlayerDead(id))
+                        return;
+
+                    int kix = -1;
+                    if ((deathReason & 1) != 0) {
+                        kix = reader.ReadInt16();
+                        var ktplr = TShock.Players[kix];
+                        var kid = ktplr.IsLoggedIn ? ktplr.User.ID : -1;
+                        var kcuser = loadedUser[kix];
+                        if (ctf.PlayerExists(kid)) {
+                            ++kcuser.Kills;
+                            giveCoins(ktplr, CTFConfig.GainKill);
+                        }
+                    }
 
                     foreach (var aix in didDamage[ix]) {
                         if (aix == kix)
