@@ -463,8 +463,7 @@ namespace CGGCTF
             if (args.Handled)
                 return;
 
-            if (args.MsgID == PacketTypes.PlayerDeathV2
-                || args.MsgID == PacketTypes.PlayerHurtV2) {
+            if (args.MsgID == PacketTypes.PlayerHurtV2) {
                 using (var reader = new BinaryReader(new MemoryStream(args.Msg.readBuffer, args.Index, args.Length))) {
 
                     var ix = reader.ReadByte();
@@ -476,6 +475,7 @@ namespace CGGCTF
                     var tplr = TShock.Players[ix];
                     var id = tplr.IsLoggedIn ? tplr.User.ID : -1;
                     var cusr = loadedUser[ix];
+
                     var ktplr = TShock.Players[kix];
                     var kcuser = loadedUser[kix];
 
@@ -487,23 +487,37 @@ namespace CGGCTF
                     if (!didDamage[ix].Contains(kix))
                         didDamage[ix].Add(kix);
 
-                    if (args.MsgID == PacketTypes.PlayerDeathV2) {
+                }
+            } else if (args.MsgID == PacketTypes.PlayerDeathV2) {
+                using (var reader = new BinaryReader(new MemoryStream(args.Msg.readBuffer, args.Index, args.Length))) {
 
+                    var ix = reader.ReadByte();
+                    var deathReason = reader.ReadByte();
+                    int kix = -1;
+                    if ((deathReason & 1) != 0) {
+                        kix = reader.ReadInt16();
+                        var ktplr = TShock.Players[kix];
+                        var kcuser = loadedUser[kix];
                         ++kcuser.Kills;
                         giveCoins(ktplr, CTFConfig.GainKill);
-                        foreach (var aix in didDamage[ix]) {
-                            if (aix == kix)
-                                continue;
-                            var atplr = TShock.Players[aix];
-                            var acusr = loadedUser[aix];
-                            ++acusr.Assists;
-                            giveCoins(ktplr, CTFConfig.GainAssist);
-                        }
-                        ++cusr.Deaths;
-                        giveCoins(tplr, CTFConfig.GainDeath);
-                        didDamage[ix] = null;
-
                     }
+
+                    var tplr = TShock.Players[ix];
+                    var id = tplr.IsLoggedIn ? tplr.User.ID : -1;
+                    var cusr = loadedUser[ix];
+
+                    foreach (var aix in didDamage[ix]) {
+                        if (aix == kix)
+                            continue;
+                        var atplr = TShock.Players[aix];
+                        var acusr = loadedUser[aix];
+                        ++acusr.Assists;
+                        giveCoins(atplr, CTFConfig.GainAssist);
+                    }
+                    ++cusr.Deaths;
+                    giveCoins(tplr, CTFConfig.GainDeath);
+                    didDamage[ix] = null;
+
                 }
             }
         }
