@@ -471,8 +471,7 @@ namespace CGGCTF
             var id = tplr.IsLoggedIn ? tplr.User.ID : -1;
 
             if (spectating[ix]) {
-                if (!tplr.HasPermission(CTFPermissions.IgnoreInteract) || args.ID < 400)
-                    args.Handled = true;
+                args.Handled = true;
             }
         }
 
