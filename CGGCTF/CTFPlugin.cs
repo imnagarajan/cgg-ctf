@@ -1316,25 +1316,25 @@ namespace CGGCTF
             var ix = tplr.Index;
             var id = tplr.IsLoggedIn ? tplr.User.ID : -1;
 
-            var name = tplr.User.Name;
-            if (args.Parameters.Count > 0
-                && tplr.HasPermission(CTFPermissions.StatsOther)) {
+            var name = tplr.Name;
+
+            if (args.Parameters.Count > 0) {
+                if (!tplr.HasPermission(CTFPermissions.StatsOther)) {
+                    tplr.SendErrorMessage("You may only check your own stats.");
+                    return;
+                }
                 name = string.Join(" ", args.Parameters);
             }
 
-            var user = TShock.Users.GetUserByName(name);
-            if (user == null) {
+            TSPlayer plr;
+            User user;
+            CTFUser cusr;
+            if (!findUser(name, out plr, out user, out cusr)) {
                 tplr.SendErrorMessage("User {0} doesn't exist.", name);
                 return;
             }
 
-            CTFUser cusr;
-            if (revID.ContainsKey(user.ID))
-                cusr = loadedUser[revID[user.ID]];
-            else
-                cusr = users.GetUser(user.ID);
-
-            tplr.SendSuccessMessage("Statistics for {0}", user.Name);
+            tplr.SendSuccessMessage("Statistics for {0}", plr?.Name ?? user.Name);
             tplr.SendInfoMessage("Wins: {0} | Loses: {1} | Draws: {2}",
                 cusr.Wins, cusr.Loses, cusr.Draws);
             tplr.SendInfoMessage("Kills: {0} | Deaths: {1} | Assists: {2}",
@@ -1751,11 +1751,6 @@ namespace CGGCTF
                     tusr = tplr.User;
                     cusr = loadedUser[tplr.Index];
                     return true;
-                } else {
-                    tplr = null;
-                    tusr = null;
-                    cusr = null;
-                    return false;
                 }
             }
 
