@@ -1132,7 +1132,7 @@ namespace CGGCTF
                         }
 
                         if (!canUseClass(tplr, cls)) {
-                            if (cls.Sell) {
+                            if (cls.Sell || tplr.HasPermission(CTFPermissions.ClassBuyAll)) {
                                 tplr.SendErrorMessage("You do not have {0}. Type {1}class buy {0}.",
                                     cls.Name, Commands.Specifier);
                                 tplr.SendErrorMessage("Price: {0}. You have {1}.",
@@ -1204,8 +1204,8 @@ namespace CGGCTF
                         displayExcept[ix] = true;
                         displayMessage(tplr, generatePackageList(tplr));
 
-                        tplr.SendInfoMessage("Turn off your minimap to see class list.");
-                        tplr.SendInfoMessage("Type {0}class list again to turn off.", Commands.Specifier);
+                        tplr.SendInfoMessage("Turn off your minimap to see package list.");
+                        tplr.SendInfoMessage("Type {0}pkg list again to turn off.", Commands.Specifier);
 
                     }
                     break;
@@ -1236,7 +1236,7 @@ namespace CGGCTF
 
                         pkgName = cls.Name.Remove(0, 1);
                         if (!canUseClass(tplr, cls)) {
-                            if (cls.Sell) {
+                            if (cls.Sell || tplr.HasPermission(CTFPermissions.PackageBuyAll)) {
                                 tplr.SendErrorMessage("You do not have {0}. Type {1}pkg buy {0}.",
                                     pkgName, Commands.Specifier);
                                 tplr.SendErrorMessage("Price: {0}. You have {1}.",
@@ -1273,6 +1273,60 @@ namespace CGGCTF
                     break;
                     #endregion
 
+                #region /pkg buy <name>
+                case "buy": {
+
+                        if (!tplr.HasPermission(CTFPermissions.PackageBuy)) {
+                            tplr.SendErrorMessage("You don't have access to this command.");
+                            return;
+                        }
+
+                        if (args.Parameters.Count < 2) {
+                            tplr.SendErrorMessage("Usage: {0}pkg buy <name>", Commands.Specifier);
+                            return;
+                        }
+
+                        var pkgName = string.Join(" ", args.Parameters.Skip(1));
+                        var className = "*" + pkgName;
+                        CTFClass cls = classes.GetClass(className);
+                        if (cls == null || (!canSeeClass(tplr, cls) && !canUseClass(tplr, cls))) {
+                            tplr.SendErrorMessage("Package {0} doesn't exist. Try {1}pkg list.",
+                                pkgName, Commands.Specifier);
+                            return;
+                        }
+
+                        className = cls.Name;
+                        pkgName = className.Remove(0, 1);
+
+                        var cusr = loadedUser[ix];
+
+                        if (canUseClass(tplr, cls)) {
+                            tplr.SendErrorMessage("You already have package {0}.", pkgName);
+                            return;
+                        }
+
+                        if (!tplr.HasPermission(CTFPermissions.PackageBuyAll) && !cls.Sell) {
+                            tplr.SendErrorMessage("You may not buy this package.");
+                            return;
+                        }
+
+                        if (cusr.Coins < cls.Price) {
+                            tplr.SendErrorMessage("You don't have enough {0} to buy package {1}.",
+                                plural, pkgName);
+                            return;
+                        }
+
+                        cusr.Coins -= cls.Price;
+                        cusr.AddClass(cls.ID);
+                        tplr.SendSuccessMessage("You bought package {0}.", pkgName);
+                        saveUser(cusr);
+
+                        if (displayExcept[ix])
+                            displayMessage(tplr, generatePackageList(tplr));
+
+                    }
+                    break;
+                #endregion
             }
         }
 
