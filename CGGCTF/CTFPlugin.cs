@@ -250,12 +250,12 @@ namespace CGGCTF
                     tplr.SendInfoMessage("{0}join to join the game. {0}spectate to watch the game.",
                         Commands.Specifier);
                 } else if (tplr.HasPermission(CTFPermissions.Play)) {
-                    tplr.SendInfoMessage("{0}join to join the game.");
+                    tplr.SendInfoMessage("{0}join to join the game.", Commands.Specifier);
                 } else if (tplr.HasPermission(CTFPermissions.Spectate)) {
-                    tplr.SendInfoMessage("{0}spectate to watch the game.");
+                    tplr.SendInfoMessage("{0}spectate to watch the game.", Commands.Specifier);
                 }
             } else if (tplr.HasPermission(CTFPermissions.Play)) {
-                tplr.SendInfoMessage("{0}join to join the game.");
+                tplr.SendInfoMessage("{0}join to join the game.", Commands.Specifier);
             }
         }
 

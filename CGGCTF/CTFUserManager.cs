@@ -89,7 +89,7 @@ namespace CGGCTF
         {
             try {
                 db.Query("UPDATE ctfusers SET Coins = @0, Kills = @1, Deaths = @2, " +
-                    "Assists = @3, Wins = @4, Loses = @5, Draws = @6, Classes = @7 WHERE ID = @7",
+                    "Assists = @3, Wins = @4, Loses = @5, Draws = @6, Classes = @7 WHERE ID = @8",
                     user.Coins, user.Kills, user.Deaths, user.Assists,
                     user.Wins, user.Loses, user.Draws, ClassesToString(user.Classes), user.ID);
                 return true;
