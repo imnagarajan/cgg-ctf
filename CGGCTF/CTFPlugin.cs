@@ -306,7 +306,7 @@ namespace CGGCTF
             int x = (int)Math.Round(args.Position.X / 16);
             int y = (int)Math.Round(args.Position.Y / 16);
 
-            if (!ctf.GameIsRunning || !ctf.PlayerExists(id))
+            if (!ctf.GameIsRunning || !ctf.PlayerExists(id) || ctf.PlayerDead(id))
                 return;
 
             if (ctf.GetPlayerTeam(id) == CTFTeam.Red) {
@@ -395,7 +395,9 @@ namespace CGGCTF
                 args.Handled = true;
             };
             if (!tplr.HasPermission(CTFPermissions.IgnoreInteract)
-                && (!ctf.PlayerExists(id) || ctf.Phase == CTFPhase.Lobby)) {
+                && (!ctf.PlayerExists(id)
+                || ctf.PlayerDead(id)
+                || ctf.Phase == CTFPhase.Lobby)) {
                 sendTile();
                 return;
             }
@@ -431,7 +433,9 @@ namespace CGGCTF
             var id = tplr.IsLoggedIn ? tplr.User.ID : -1;
 
             if (!tplr.HasPermission(CTFPermissions.IgnoreInteract)
-                && (!ctf.PlayerExists(id) || ctf.Phase == CTFPhase.Lobby)) {
+                && (!ctf.PlayerExists(id)
+                || ctf.PlayerDead(id)
+                || ctf.Phase == CTFPhase.Lobby)) {
                 args.Handled = true;
                 return;
             }
