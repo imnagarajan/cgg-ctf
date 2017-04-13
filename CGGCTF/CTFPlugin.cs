@@ -242,8 +242,21 @@ namespace CGGCTF
             setPlayerClass(tplr, blankClass);
 
             // TODO - make joining player sees the message for auto-login
-            if (ctf.PlayerExists(id))
-                ctf.RejoinGame(id);
+            if (ctf.GameIsRunning) {
+                if (ctf.PlayerExists(id)) {
+                    ctf.RejoinGame(id);
+                } else if (tplr.HasPermission(CTFPermissions.Play)
+                    && tplr.HasPermission(CTFPermissions.Spectate)) {
+                    tplr.SendInfoMessage("{0}join to join the game. {0}spectate to watch the game.",
+                        Commands.Specifier);
+                } else if (tplr.HasPermission(CTFPermissions.Play)) {
+                    tplr.SendInfoMessage("{0}join to join the game.");
+                } else if (tplr.HasPermission(CTFPermissions.Spectate)) {
+                    tplr.SendInfoMessage("{0}spectate to watch the game.");
+                }
+            } else if (tplr.HasPermission(CTFPermissions.Play)) {
+                tplr.SendInfoMessage("{0}join to join the game.");
+            }
         }
 
         void onLogout(PlayerLogoutEventArgs args)
