@@ -1238,77 +1238,76 @@ namespace CGGCTF
         {
             var tplr = args.Player;
             var ix = tplr.Index;
-            var id = tplr.IsLoggedIn ? tplr.User.ID : -1;
-            var cusr = loadedUser[ix];
 
-            #region Check self
-            if (args.Parameters.Count == 0
-                || (!tplr.HasPermission(CTFPermissions.BalCheckOther)
-                && !tplr.HasPermission(CTFPermissions.BalEdit))) {
+            if (args.Parameters.Count > 0) {
+                if (args.Parameters[0].ToLower() == "add") {
 
-                tplr.SendInfoMessage("You have {0}.",
-                    CTFUtils.Pluralize(cusr.Coins, singular, plural));
-            #endregion
-            #region Add balance
-            } else if (args.Parameters[0].ToLower() == "add") {
+                    if (!tplr.HasPermission(CTFPermissions.BalEdit)) {
+                        tplr.SendErrorMessage("You don't have access to this command.");
+                        return;
+                    }
+                    else if (args.Parameters.Count < 3) {
+                        tplr.SendErrorMessage("Usage: {0}balance add <name> <amount>",
+                            Commands.Specifier);
+                        return;
+                    }
 
-                if (!tplr.HasPermission(CTFPermissions.BalEdit)) {
-                    tplr.SendErrorMessage("You don't have access to this command.");
-                    return;
-                } else if (args.Parameters.Count < 3) {
-                    tplr.SendErrorMessage("Usage: {0}balance add <name> <amount>", Commands.Specifier);
-                    return;
+                    int amount;
+                    if (!int.TryParse(args.Parameters[args.Parameters.Count - 1], out amount)) {
+                        tplr.SendErrorMessage("Invalid amount.");
+                        return;
+                    }
+
+                    var prms = new List<string>(args.Parameters.Count - 2);
+                    for (int i = 1; i < args.Parameters.Count - 1; ++i)
+                        prms.Add(args.Parameters[i]);
+                    var name = string.Join(" ", prms);
+
+                    TSPlayer ttplr;
+                    User ttusr;
+                    CTFUser tcusr;
+                    if (!findUser(name, out ttplr, out ttusr, out tcusr)) {
+                        tplr.SendErrorMessage("User {0} doesn't exist.", name);
+                        return;
+                    }
+
+                    tcusr.Coins += amount;
+                    saveUser(tcusr);
+                    tplr.SendSuccessMessage("Gave {0} {1}.",
+                        ttplr?.Name ?? ttusr.Name,
+                        CTFUtils.Pluralize(amount, singular, plural));
+
+                } else {
+
+                    if (!tplr.HasPermission(CTFPermissions.BalCheckOther)) {
+                        tplr.SendErrorMessage("You can only check your balance.");
+                        return;
+                    }
+
+                    var name = string.Join(" ", args.Parameters);
+                    TSPlayer ttplr;
+                    User ttusr;
+                    CTFUser tcusr;
+                    if (!findUser(name, out ttplr, out ttusr, out tcusr)) {
+                        tplr.SendErrorMessage("User {0} doesn't exist.", name);
+                        return;
+                    }
+
+                    tplr.SendInfoMessage("{0} has {1}.",
+                        ttplr?.Name ?? ttusr.Name,
+                        CTFUtils.Pluralize(tcusr.Coins, singular, plural));
+
                 }
-
-                int amount;
-                if (!int.TryParse(args.Parameters[args.Parameters.Count - 1], out amount)) {
-                    tplr.SendErrorMessage("Invalid amount");
-                    return;
-                }
-
-                var nameParams = new List<string>(args.Parameters.Count - 2);
-                for (int i = 1; i < args.Parameters.Count - 1; ++i)
-                    nameParams.Add(args.Parameters[i]);
-                var plrName = string.Join(" ", nameParams);
-
-                var targetTuser = TShock.Users.GetUserByName(plrName);
-                if (targetTuser == null) {
-                    tplr.SendErrorMessage("User {0} doesn't exist.", plrName);
-                    return;
-                }
-
-                CTFUser targetCuser;
-                if (revID.ContainsKey(targetTuser.ID))
-                    targetCuser = loadedUser[revID[targetTuser.ID]];
-                else
-                    targetCuser = users.GetUser(targetTuser.ID);
-
-                targetCuser.Coins += amount;
-                tplr.SendSuccessMessage("Gave {0} {1}.", targetTuser.Name,
-                    CTFUtils.Pluralize(amount, singular, plural));
-                saveUser(targetCuser);
-            #endregion
-            #region Check others
-            } else {
-
-                var plrName = string.Join(" ", args.Parameters);
-                var targetTuser = TShock.Users.GetUserByName(plrName);
-                if (targetTuser == null) {
-                    tplr.SendErrorMessage("User {0} doesn't exist.", plrName);
-                    return;
-                }
-
-                CTFUser targetCuser;
-                if (revID.ContainsKey(targetTuser.ID))
-                    targetCuser = loadedUser[revID[targetTuser.ID]];
-                else
-                    targetCuser = users.GetUser(targetTuser.ID);
-
-                tplr.SendInfoMessage("{0} has {1}.", targetTuser.Name,
-                    CTFUtils.Pluralize(targetCuser.Coins, singular, plural));
-
+                return;
             }
-            #endregion
+
+            if (!tplr.IsLoggedIn) {
+                tplr.SendSuccessMessage("You must be logged in to use this command.");
+                return;
+            }
+
+            var cusr = loadedUser[ix];
+            tplr.SendInfoMessage("You have {0}.", CTFUtils.Pluralize(cusr.Coins, singular, plural));
         }
 
         void cmdStats(CommandArgs args)
@@ -1653,8 +1652,7 @@ namespace CGGCTF
             return true;
         }
 
-        void setDifficulty(TSPlayer tplr, int diff)
-        {
+        void setDifficulty(TSPlayer tplr, int diff) {
             tplr.Difficulty = diff;
             tplr.TPlayer.difficulty = (byte)diff;
             TSPlayer.All.SendData(PacketTypes.PlayerInfo, "", tplr.Index);
@@ -1682,8 +1680,7 @@ namespace CGGCTF
             users.SaveUser(cusr);
         }
 
-        string generateClassList(TSPlayer tplr)
-        {
+        string generateClassList(TSPlayer tplr) {
             var list = classes.GetClasses();
             var bought = new StringBuilder();
             var notyet = new StringBuilder();
@@ -1743,6 +1740,44 @@ namespace CGGCTF
                     diff < 0 ? "lost" : "got",
                     CTFUtils.Pluralize(Math.Abs(diff), singular, plural));
             }
+        }
+
+        bool findUser(string name, out TSPlayer tplr, out User tusr, out CTFUser cusr)
+        {
+            var plrMatches = TShock.Utils.FindPlayer(name);
+            if (plrMatches.Count == 1) {
+                tplr = plrMatches[0];
+                if (tplr.IsLoggedIn) {
+                    tusr = tplr.User;
+                    cusr = loadedUser[tplr.Index];
+                    return true;
+                } else {
+                    tplr = null;
+                    tusr = null;
+                    cusr = null;
+                    return false;
+                }
+            }
+
+            var usr = TShock.Users.GetUserByName(name);
+            if (usr == null) {
+                tplr = null;
+                tusr = null;
+                cusr = null;
+                return false;
+            }
+
+            if (revID.ContainsKey(usr.ID)) {
+                tplr = TShock.Players[revID[usr.ID]];
+                tusr = tplr.User;
+                cusr = loadedUser[tplr.Index];
+                return true;
+            }
+
+            tplr = null;
+            tusr = usr;
+            cusr = users.GetUser(tusr.ID);
+            return true;
         }
 
         #endregion
