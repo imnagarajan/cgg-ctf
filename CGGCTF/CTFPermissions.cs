@@ -20,6 +20,13 @@ namespace CGGCTF
         public static readonly string ClassUseAll = "ctf.class.useall";
         public static readonly string ClassEdit = "ctf.class.edit";
 
+        public static readonly string PackageUse = "ctf.pkg.use";
+        public static readonly string PackageBuy = "ctf.pkg.buy";
+        public static readonly string PackageSeeAll = "ctf.pkg.seeall";
+        public static readonly string PackageBuyAll = "ctf.pkg.buyall";
+        public static readonly string PackageUseAll = "ctf.pkg.useall";
+        public static readonly string PackageEdit = "ctf.pkg.edit";
+
         public static readonly string BalCheck = "ctf.bal.check.self";
         public static readonly string BalCheckOther = "ctf.bal.check.others";
         public static readonly string BalEdit = "ctf.bal.edit";
