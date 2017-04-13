@@ -25,6 +25,9 @@ namespace CGGCTF
         public static readonly string BalEdit = "ctf.bal.edit";
         public static readonly string BalGain = "ctf.bal.gain";
 
+        public static readonly string StatsSelf = "ctf.stats.self";
+        public static readonly string StatsOther = "ctf.stats.others";
+
         public static readonly string IgnoreInteract = "ctf.ignore.interact";
         public static readonly string IgnoreTempgroup = "ctf.ignore.tempgroup";
         public static readonly string IgnoreSpecJoin = "ctf.ignore.specjoin";

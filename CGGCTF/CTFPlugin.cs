@@ -11,6 +11,7 @@ using Terraria;
 using TerrariaApi.Server;
 using Terraria.DataStructures;
 using TShockAPI;
+using TShockAPI.DB;
 using TShockAPI.Hooks;
 
 namespace CGGCTF
@@ -181,6 +182,7 @@ namespace CGGCTF
             add(new Command(CTFPermissions.SwitchTeam, cmdTeam, "team"));
             add(new Command(CTFPermissions.Spectate, cmdSpectate, "spectate"));
             add(new Command(CTFPermissions.BalCheck, cmdBalance, "balance", "bal"));
+            add(new Command(CTFPermissions.StatsSelf, cmdStats, "stats"));
             #endregion
         }
 
@@ -1307,6 +1309,39 @@ namespace CGGCTF
 
             }
             #endregion
+        }
+
+        void cmdStats(CommandArgs args)
+        {
+            var tplr = args.Player;
+            var ix = tplr.Index;
+            var id = tplr.IsLoggedIn ? tplr.User.ID : -1;
+
+            var name = tplr.User.Name;
+            if (args.Parameters.Count > 0
+                && tplr.HasPermission(CTFPermissions.StatsOther)) {
+                name = string.Join(" ", args.Parameters);
+            }
+
+            var user = TShock.Users.GetUserByName(name);
+            if (user == null) {
+                tplr.SendErrorMessage("User {0} doesn't exist.", name);
+                return;
+            }
+
+            CTFUser cusr;
+            if (revID.ContainsKey(user.ID))
+                cusr = loadedUser[revID[user.ID]];
+            else
+                cusr = users.GetUser(user.ID);
+
+            tplr.SendSuccessMessage("Statistics for {0}", user.Name);
+            tplr.SendInfoMessage("Wins: {0} | Loses: {1} | Draws: {2}",
+                cusr.Wins, cusr.Loses, cusr.Draws);
+            tplr.SendInfoMessage("Kills: {0} | Deaths: {1} | Assists: {2}",
+                cusr.Kills, cusr.Deaths, cusr.Assists);
+            tplr.SendInfoMessage("Total Games: {0} | K/D Ratio: {1:f3}",
+                cusr.TotalGames, cusr.KDRatio);
         }
 
         #endregion
