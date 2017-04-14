@@ -23,39 +23,44 @@ namespace CGGCTF
             instance = ActualConfig.Read(path);
         }
 
-        public static int WaitTime { get { return instance.WaitTime; } }
-        public static int PrepTime { get { return instance.PrepTime; } }
-        public static int CombatTime { get { return instance.CombatTime; } }
-        public static int SuddenDeathTime { get { return instance.SuddenDeathTime; } }
-        public static int ShutdownTime { get { return instance.ShutdownTime; } }
+        public static int WaitTime => instance.WaitTime;
+        public static int PrepTime => instance.PrepTime;
+        public static int CombatTime => instance.CombatTime;
+        public static int SuddenDeathTime => instance.SuddenDeathTime;
+        public static int ShutdownTime => instance.ShutdownTime;
 
-        public static int MinPlayerToStart { get { return instance.MinPlayerToStart; } }
-        public static bool AbortGameOnNoPlayer { get { return instance.AbortGameOnNoPlayer; } }
-        public static bool AssignTeamIgnoreOffline { get { return instance.AssignTeamIgnoreOffline; } }
-        public static bool DisallowSpectatorJoin { get { return instance.DisableSpectatorJoin; } }
-        public static bool SuddenDeathDrops { get { return instance.SuddenDeathDrops; } }
+        public static int MinPlayerToStart => instance.MinPlayerToStart;
+        public static bool AbortGameOnNoPlayer => instance.AbortGameOnNoPlayer;
+        public static bool AssignTeamIgnoreOffline => instance.AssignTeamIgnoreOffline;
+        public static bool DisallowSpectatorJoin => instance.DisableSpectatorJoin;
+        public static bool SuddenDeathDrops => instance.SuddenDeathDrops;
 
-        public static int FlagDistance { get { return instance.FlagDistance; } }
-        public static int SpawnDistance { get { return instance.SpawnDistance; } }
-        public static int WallWidth { get { return instance.WallWidth; } }
+        public static int FlagDistance => instance.FlagDistance;
+        public static int SpawnDistance => instance.SpawnDistance;
+        public static int WallWidth => instance.WallWidth;
 
-        public static int RainTimer { get { return instance.RainTimer; } }
-        public static int CursedTime { get { return instance.CursedTime; } }
+        public static int RainTimer => instance.RainTimer;
+        public static int CursedTime => instance.CursedTime;
 
-        public static string MoneySingularName { get { return instance.MoneySingularName; } }
-        public static string MoneyPluralName { get { return instance.MoneyPluralName; } }
+        public static string MoneySingularName => instance.MoneySingularName;
+        public static string MoneyPluralName => instance.MoneyPluralName;
 
-        public static int GainKill { get { return instance.GainKill; } }
-        public static int GainDeath { get { return instance.GainDeath; } }
-        public static int GainAssist { get { return instance.GainAssist; } }
-        public static int GainCapture { get { return instance.GainCapture; } }
-        public static int GainWin { get { return instance.GainWin; } }
-        public static int GainLose { get { return instance.GainLose; } }
-        public static int GainDraw { get { return instance.GainDraw; } }
+        public static int GainKill => instance.GainKill;
+        public static int GainDeath => instance.GainDeath;
+        public static int GainAssist => instance.GainAssist;
+        public static int GainCapture => instance.GainCapture;
+        public static int GainWin => instance.GainWin;
+        public static int GainLose => instance.GainLose;
+        public static int GainDraw => instance.GainDraw;
 
-        public static string ClassListHave { get { return instance.ClassListHave; } }
-        public static string ClassListDontHave { get { return instance.ClassListDontHave; } }
-        public static string ClassListHidden { get { return instance.ClassListHidden; } }
+        public static string ListFormatting => instance.ListFormatting;
+        public static string TextWhenNoDesc => instance.TextWhenNoDesc;
+        public static string TextIfUsable => instance.TextIfUsable;
+        public static string TextIfUnusable => instance.TextIfUnusable;
+        public static string AppendHidden => instance.AppendHidden;
+
+        public static int ListLineCountIngame => instance.ListLineCountIngame;
+        public static int ListLineCountOutgame => instance.ListLineCountOutgame;
 
         class ActualConfig
         {
@@ -89,9 +94,14 @@ namespace CGGCTF
             public int GainLose = 10;
             public int GainDraw = 10;
 
-            public string ClassListHave = "{0}: {1}{3}";
-            public string ClassListDontHave = "{0}: {1} ({2}){3}";
-            public string ClassListHidden = " (Hidden)";
+            public string ListFormatting = "{0} ({1}): {2} {3}{4}";
+            public string TextWhenNoDesc = "No Description";
+            public string TextIfUsable = "(Can use)";
+            public string TextIfUnusable = "(Can't use)";
+            public string AppendHidden = " (Hidden)";
+
+            public int ListLineCountIngame = 4;
+            public int ListLineCountOutgame = 20;
 
             public void Write(string path)
             {

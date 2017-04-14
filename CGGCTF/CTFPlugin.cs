@@ -9,7 +9,7 @@ using System.Diagnostics;
 
 using Terraria;
 using TerrariaApi.Server;
-using Terraria.DataStructures;
+using Microsoft.Xna.Framework;
 using TShockAPI;
 using TShockAPI.DB;
 using TShockAPI.Hooks;
@@ -63,7 +63,6 @@ namespace CGGCTF
         bool sdDrops { get { return CTFConfig.SuddenDeathDrops; } }
         int shutdownTime { get { return CTFConfig.ShutdownTime;  } }
         int minPlayerToStart { get { return CTFConfig.MinPlayerToStart; } }
-        bool[] displayExcept = new bool[256];
 
         // wind and rain stuffs
         Timer rainTimer;
@@ -281,7 +280,6 @@ namespace CGGCTF
             TShock.CharacterDB.InsertPlayerData(tplr);
 
             hatForce[ix] = false;
-            displayExcept[ix] = false;
             editingClass[ix] = null;
             tplr.IsLoggedIn = false;
             spectating[ix] = false;
@@ -559,7 +557,13 @@ namespace CGGCTF
 
         string lastDisplay = null;
 
-        void displayMessage(TSPlayer tplr, StringBuilder ss)
+        void displayMessage(string s)
+        {
+            var ss = new StringBuilder(s);
+            displayMessage(ss);
+        }
+
+        void displayMessage(StringBuilder ss)
         {
             for (int i = 0; i < 50; ++i)
                 ss.Append("\n");
@@ -567,15 +571,10 @@ namespace CGGCTF
             for (int i = 0; i < 28; ++i)
                 ss.Append(" ");
             ss.Append("\nctf");
-            tplr.SendData(PacketTypes.Status, ss.ToString(), 0);
+            TSPlayer.All.SendData(PacketTypes.Status, ss.ToString(), 0);
         }
 
-        void displayMessage(TSPlayer tplr, string msg)
-        {
-            displayMessage(tplr, new StringBuilder(msg));
-        }
-
-        void displayTime(TSPlayer tplr, string phase = null)
+        void displayTime(string phase = null)
         {
             if (phase == null) {
                 if (lastDisplay != null)
@@ -593,29 +592,13 @@ namespace CGGCTF
                 ss.Append("\n{0} has blue flag.".SFormat(TShock.Players[revID[ctf.BlueFlagHolder]].Name));
             if (ctf.RedFlagHeld)
                 ss.Append("\n{0} has red flag.".SFormat(TShock.Players[revID[ctf.RedFlagHolder]].Name));
-            displayMessage(tplr, ss);
+            displayMessage(ss);
             lastDisplay = phase;
-        }
-
-        void displayTime(string phase = null)
-        {
-            foreach (var tplr in TShock.Players) {
-                if (tplr != null && tplr.Active && !displayExcept[tplr.Index])
-                    displayTime(tplr, phase);
-            }
         }
 
         void displayBlank()
         {
-            foreach (var tplr in TShock.Players) {
-                if (tplr != null && tplr.Active && !displayExcept[tplr.Index])
-                    displayBlank(tplr);
-            }
-        }
-
-        void displayBlank(TSPlayer tplr)
-        {
-            displayMessage(tplr, "");
+            displayMessage("");
         }
 
         void onGameTimerElapsed(object sender, ElapsedEventArgs args)
@@ -705,13 +688,22 @@ namespace CGGCTF
             var tplr = args.Player;
             var ix = tplr.Index;
             var id = tplr.IsLoggedIn ? tplr.User.ID : -1;
-            if (tplr == TSPlayer.Server || !tplr.Active || !tplr.RealPlayer) {
-                tplr.SendErrorMessage("You must be in-game to use this command.");
-                return;
-            }
+            var validPlayer = (tplr != TSPlayer.Server && tplr.Active && tplr.RealPlayer);
 
             if (args.Parameters.Count == 0) {
-                tplr.SendErrorMessage("Usage: {0}class <name/list>", Commands.Specifier);
+                if (validPlayer) {
+                    tplr.SendErrorMessage("Usage: {0}class <name/list>", Commands.Specifier);
+                    return;
+                }
+            }
+
+            var outgameSub = new string[] {
+                "list", "check", "allow", "disallow", "refund"
+            };
+            if (!validPlayer
+                && (args.Parameters.Count == 0
+                || !outgameSub.Contains(args.Parameters[0].ToLower()))) {
+                tplr.SendErrorMessage("You must be in-game to use this command.");
                 return;
             }
 
@@ -720,18 +712,27 @@ namespace CGGCTF
                 #region /class list
                 case "list": {
 
-                        if (displayExcept[ix]) {
-                            displayExcept[ix] = false;
-                            displayBlank(tplr);
-                            tplr.SendInfoMessage("Disabled list display.");
+                        int pageNumber;
+                        if (!PaginationTools.TryParsePageNumber(args.Parameters, 1, args.Player, out pageNumber))
                             return;
-                        }
 
-                        displayExcept[ix] = true;
-                        displayMessage(tplr, generateClassList(tplr));
+                        var classList = generateList(tplr, false);
+                        var lineCount = (validPlayer
+                            ? CTFConfig.ListLineCountIngame
+                            : CTFConfig.ListLineCountOutgame);
 
-                        tplr.SendInfoMessage("Turn off your minimap to see class list.");
-                        tplr.SendInfoMessage("Type {0}class list again to turn off.", Commands.Specifier);
+                        PaginationTools.SendPage(
+                            tplr,
+                            pageNumber,
+                            classList,
+                            new PaginationTools.Settings() {
+                                HeaderFormat = "Classes ({0}/{1})",
+                                FooterFormat = string.Format(
+                                "Type {0}class list {{0}} for more.",
+                                Commands.Specifier),
+                                NothingToDisplayString = "There are no available classes.",
+                                MaxLinesPerPage = lineCount
+                            });
 
                     }
                     break;
@@ -800,11 +801,6 @@ namespace CGGCTF
                         tplr.SendSuccessMessage("Edited class {0}.", editingClass[ix].Name);
                         editingClass[ix] = null;
                         timeLeft = ctf.OnlinePlayer >= CTFConfig.MinPlayerToStart ? waitTime : 0;
-
-                        foreach (var tp in TShock.Players) {
-                            if (tp != null && displayExcept[tp.Index])
-                                displayMessage(tp, generateClassList(tp));
-                        }
 
                     }
                     break;
@@ -1049,11 +1045,6 @@ namespace CGGCTF
                         tplr.SendSuccessMessage("Class {0} has been removed.", cls.Name);
                         classes.DeleteClass(cls.ID);
 
-                        foreach (var tp in TShock.Players) {
-                            if (tp != null && displayExcept[tp.Index])
-                                displayMessage(tp, generateClassList(tp));
-                        }
-
                     }
                     break;
                 #endregion
@@ -1096,11 +1087,6 @@ namespace CGGCTF
                         classes.SaveClass(cls1);
                         tplr.SendSuccessMessage("Cloned {0} into {1}.", cls1.Name, args.Parameters[2]);
 
-                        foreach (var tp in TShock.Players) {
-                            if (tp != null && displayExcept[tp.Index])
-                                displayMessage(tp, generateClassList(tp));
-                        }
-
                     }
                     return;
                 #endregion
@@ -1137,9 +1123,9 @@ namespace CGGCTF
                         clsName = cls.Name;
 
                         if (cusr.HasClass(cls.ID))
-                            tplr.SendInfoMessage("{0} can use class {1}.", name, clsName);
+                            tplr.SendInfoMessage("{0} has class {1}.", name, clsName);
                         else
-                            tplr.SendInfoMessage("{0} can't use class {1}.", name, clsName);
+                            tplr.SendInfoMessage("{0} doesn't have class {1}.", name, clsName);
 
                     }
                     break;
@@ -1327,9 +1313,6 @@ namespace CGGCTF
                         tplr.SendSuccessMessage("You bought class {0}.", cls.Name);
                         saveUser(cusr);
 
-                        if (displayExcept[ix])
-                            displayMessage(tplr, generateClassList(tplr));
-
                     }
                     break;
                 #endregion
@@ -1372,8 +1355,6 @@ namespace CGGCTF
                         }
 
                         ctf.PickClass(id, cls);
-                        displayExcept[ix] = false;
-                        displayBlank(tplr);
 
                     }
                     break;
@@ -1388,13 +1369,19 @@ namespace CGGCTF
             var tplr = args.Player;
             var ix = tplr.Index;
             var id = tplr.IsLoggedIn ? tplr.User.ID : -1;
-            if (tplr == TSPlayer.Server || !tplr.Active || !tplr.RealPlayer) {
-                tplr.SendErrorMessage("You must be in-game to use this command.");
-                return;
-            }
+            var validPlayer = (tplr != TSPlayer.Server && tplr.Active && tplr.RealPlayer);
 
             if (args.Parameters.Count == 0) {
-                tplr.SendErrorMessage("Usage: {0}pkg <name/list>", Commands.Specifier);
+                if (validPlayer) {
+                    tplr.SendErrorMessage("Usage: {0}pkg <name/list>", Commands.Specifier);
+                    return;
+                }
+            }
+
+            if (!validPlayer
+                && (args.Parameters.Count == 0
+                || args.Parameters[0] != "list")) {
+                tplr.SendErrorMessage("You must be in-game to use this command.");
                 return;
             }
 
@@ -1428,18 +1415,29 @@ namespace CGGCTF
                 #region /pkg list
                 case "list": {
 
-                        if (displayExcept[ix]) {
-                            displayExcept[ix] = false;
-                            displayBlank(tplr);
-                            tplr.SendInfoMessage("Disabled list display.");
+                        int pageNumber;
+                        if (!PaginationTools.TryParsePageNumber(args.Parameters, 1, args.Player, out pageNumber))
                             return;
-                        }
 
-                        displayExcept[ix] = true;
-                        displayMessage(tplr, generatePackageList(tplr));
+                        var pkgList = generateList(tplr, true);
+                        var lineCount = (validPlayer
+                            ? CTFConfig.ListLineCountIngame
+                            : CTFConfig.ListLineCountOutgame);
 
-                        tplr.SendInfoMessage("Turn off your minimap to see package list.");
-                        tplr.SendInfoMessage("Type {0}pkg list again to turn off.", Commands.Specifier);
+                        PaginationTools.SendPage(
+                            tplr,
+                            pageNumber,
+                            pkgList,
+                            new PaginationTools.Settings() {
+                                HeaderFormat = "Packages ({0}/{1})",
+                                FooterFormat = string.Format(
+                                "Type {0}pkg list {{0}} for more.",
+                                Commands.Specifier),
+                                NothingToDisplayString = "There are no available packages.",
+                                MaxLinesPerPage = lineCount
+                            });
+
+
 
                     }
                     break;
@@ -1500,8 +1498,6 @@ namespace CGGCTF
                         }
 
                         tplr.SendSuccessMessage("You used {0}.", pkgName);
-                        displayBlank(tplr);
-                        displayExcept[ix] = false;
 
                     }
                     break;
@@ -1554,9 +1550,6 @@ namespace CGGCTF
                         cusr.AddClass(cls.ID);
                         tplr.SendSuccessMessage("You bought package {0}.", pkgName);
                         saveUser(cusr);
-
-                        if (displayExcept[ix])
-                            displayMessage(tplr, generatePackageList(tplr));
 
                     }
                     break;
@@ -2067,9 +2060,7 @@ namespace CGGCTF
 
             if (hasPerm || (cls.Price == 0 && cls.Sell))
                 return true;
-            if (!tplr.IsLoggedIn)
-                return false;
-            return loadedUser[tplr.Index].HasClass(cls.ID);
+            return getUser(tplr)?.HasClass(cls.ID) ?? false;
         }
 
         bool canSeeClass(TSPlayer tplr, CTFClass cls)
@@ -2080,7 +2071,7 @@ namespace CGGCTF
             else
                 hasPerm = tplr.HasPermission(CTFPermissions.ClassSeeAll);
 
-            if (cls.Hidden && !canUseClass(tplr, cls) && !hasPerm)
+            if (cls.Hidden && !hasPerm)
                 return false;
             return true;
         }
@@ -2115,59 +2106,60 @@ namespace CGGCTF
             users.SaveUser(cusr);
         }
 
-        string generateList(TSPlayer tplr, bool package) {
-            var list = classes.GetClasses();
-            var bought = new StringBuilder();
-            var notyet = new StringBuilder();
-            foreach (var cls in list) {
-                if (package != cls.Name.StartsWith("*"))
+        List<Tuple<string, Color>> generateList(TSPlayer tplr, bool forPackage)
+        {
+            var have = new List<Tuple<string, Color>>();
+            var dontHave = new List<Tuple<string, Color>>();
+
+            var allClasses = classes.GetClasses();
+
+            foreach (var cls in allClasses) {
+
+                // skip template classes
+                if (cls.Name.StartsWith("_"))
                     continue;
+                // skip package if generating class list and vice versa
+                if (forPackage != cls.Name.StartsWith("*"))
+                    continue;
+
+                // assign list to add to according to player's permission
+                List<Tuple<string, Color>> addTo;
+                Color color;
                 if (!canSeeClass(tplr, cls))
                     continue;
+
                 if (canUseClass(tplr, cls)) {
-                    bought.Append("\n" + string.Format(CTFConfig.ClassListHave,
-                        (package ? cls.Name.Remove(0, 1) : cls.Name),
-                        cls.Description, cls.Sell
-                        ? (cls.Price == 0 ? "Free"
-                        : CTFUtils.Pluralize(cls.Price, singular, plural))
-                        : "Locked",
-                        cls.Hidden ? CTFConfig.ClassListHidden : ""));
+                    addTo = have;
+                    color = Color.Yellow;
                 } else {
-                    notyet.Append("\n" + string.Format(CTFConfig.ClassListDontHave,
-                        (package ? cls.Name.Remove(0, 1) : cls.Name),
-                        cls.Description, cls.Sell
-                        ? (cls.Price == 0 ? "Free"
-                        : CTFUtils.Pluralize(cls.Price, singular, plural))
-                        : "Locked",
-                        cls.Hidden ? CTFConfig.ClassListHidden : ""));
+                    addTo = dontHave;
+                    color = Color.OrangeRed;
                 }
+
+                // format class text and add to the list
+                addTo.Add(new Tuple<string, Color>(
+                    string.Format(
+                        CTFConfig.ListFormatting, // 0
+                        forPackage ? cls.Name.Remove(0, 1) : cls.Name, // 1
+                        (cls.Price == 0
+                        ? (cls.Sell ? "Free" : "Locked")
+                        : CTFUtils.Pluralize(cls.Price, singular, plural)), // 2
+                        (string.IsNullOrWhiteSpace(cls.Description)
+                        ? CTFConfig.TextWhenNoDesc
+                        : cls.Description),
+                        (canUseClass(tplr, cls)
+                        ? CTFConfig.TextIfUsable
+                        : CTFConfig.TextIfUnusable), // 3
+                        (cls.Hidden ? CTFConfig.AppendHidden : "") // 4
+                    ),
+                    color
+                    ));
+
             }
 
-            var finalmsg = new StringBuilder();
-            if (bought.Length != 0) {
-                finalmsg.Append(string.Format(
-                    "- {0} you have -", package ? "Packages" : "Class"));
-                finalmsg.Append(bought);
-            }
-            if (bought.Length != 0 && notyet.Length != 0)
-                finalmsg.Append("\n\n");
-            if (notyet.Length != 0) {
-                finalmsg.Append(string.Format(
-                    "- {0} you do not have -", package ? "Packages" : "Class"));
-                finalmsg.Append(notyet);
-            }
+            have.AddRange(dontHave);
+            return have;
 
-            return finalmsg.ToString();
-        }
-
-        string generateClassList(TSPlayer tplr)
-        {
-            return generateList(tplr, false);
-        }
-
-        string generatePackageList(TSPlayer tplr)
-        {
-            return generateList(tplr, true);
         }
 
         void giveCoins(TSPlayer tplr, int amount, bool alert = true)
@@ -2224,6 +2216,17 @@ namespace CGGCTF
             tusr = usr;
             cusr = users.GetUser(tusr.ID);
             return true;
+        }
+
+        CTFUser getUser(TSPlayer plr)
+        {
+            TSPlayer tplr;
+            User tusr;
+            CTFUser cusr;
+            if (!plr.IsLoggedIn
+                || !findUser(plr.User.Name, out tplr, out tusr, out cusr))
+                return null;
+            return cusr;
         }
 
         #endregion
