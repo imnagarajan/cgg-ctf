@@ -1485,12 +1485,14 @@ namespace CGGCTF
                 return;
             }
 
-            if (!tplr.IsLoggedIn) {
-                tplr.SendSuccessMessage("You must be logged in to use this command.");
+            TSPlayer xtplr;
+            User xtusr;
+            CTFUser cusr;
+            if (!findUser(tplr.Name, out xtplr, out xtusr, out cusr)) {
+                tplr.SendErrorMessage("You must be logged in to use this command.");
                 return;
             }
 
-            var cusr = loadedUser[ix];
             tplr.SendInfoMessage("You have {0}.", CTFUtils.Pluralize(cusr.Coins, singular, plural));
         }
 
@@ -1514,7 +1516,10 @@ namespace CGGCTF
             User user;
             CTFUser cusr;
             if (!findUser(name, out plr, out user, out cusr)) {
-                tplr.SendErrorMessage("User {0} doesn't exist.", name);
+                if (name == tplr.Name)
+                    tplr.SendErrorMessage("You must be logged in to use this command.");
+                else
+                    tplr.SendErrorMessage("User {0} doesn't exist.", name);
                 return;
             }
 
