@@ -438,19 +438,22 @@ namespace CGGCTF
         void setTeam(int id)
         {
             Debug.Assert(PlayerExists(id));
-            cb.SetTeam(id, players[id].Team);
+            if (players[id].Online)
+                cb.SetTeam(id, players[id].Team);
         }
 
         void setPvP(int id)
         {
             Debug.Assert(PlayerExists(id));
-            cb.SetPvP(id, IsPvPPhase);
+            if (players[id].Online)
+                cb.SetPvP(id, IsPvPPhase);
         }
 
         void setInventory(int id)
         {
             Debug.Assert(PlayerExists(id));
             Debug.Assert(players[id].PickedClass);
+            Debug.Assert(players[id].Online);
             cb.SetInventory(id, players[id].Class);
         }
 
@@ -465,7 +468,8 @@ namespace CGGCTF
         void warpToSpawn(int id)
         {
             Debug.Assert(PlayerExists(id));
-            cb.WarpToSpawn(id, players[id].Team);
+            if (players[id].Online)
+                cb.WarpToSpawn(id, players[id].Team);
         }
 
         void informPlayerJoin(int id)
@@ -555,7 +559,9 @@ namespace CGGCTF
 
         void setMediumcore(int id)
         {
-            cb.SetMediumcore(id);
+            Debug.Assert(PlayerExists(id));
+            if (players[id].Online)
+                cb.SetMediumcore(id);
         }
 
         #endregion
