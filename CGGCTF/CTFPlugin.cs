@@ -972,7 +972,8 @@ namespace CGGCTF
                     break;
                 #endregion
 
-                #region /class hidden
+                #region /class visible
+                case "visible":
                 case "hidden": {
 
                         if (!tplr.HasPermission(CTFPermissions.ClassEdit)) {
@@ -994,7 +995,8 @@ namespace CGGCTF
                     break;
                 #endregion
 
-                #region /class sell
+                #region /class lock
+                case "lock":
                 case "sell": {
 
                         if (!tplr.HasPermission(CTFPermissions.ClassEdit)) {
@@ -1051,6 +1053,231 @@ namespace CGGCTF
                             if (tp != null && displayExcept[tp.Index])
                                 displayMessage(tp, generateClassList(tp));
                         }
+
+                    }
+                    break;
+                #endregion
+
+                #region /class clone <old> <new>
+                case "clone":
+                case "copy": {
+
+                        if (!tplr.HasPermission(CTFPermissions.ClassEdit)) {
+                            tplr.SendErrorMessage("You don't have access to this command.");
+                            return;
+                        }
+                        if (ctf.Phase != CTFPhase.Lobby) {
+                            tplr.SendErrorMessage("You can only edit classes before game starts.");
+                            return;
+                        }
+                        if (editingClass[ix] != null) {
+                            tplr.SendErrorMessage("You are editing class {0} right now.", editingClass[ix].Name);
+                            tplr.SendErrorMessage("{0}class save or {0}class discard.", Commands.Specifier);
+                            return;
+                        }
+                        if (args.Parameters.Count != 3) {
+                            tplr.SendErrorMessage("Usage: {0}class clone <old> <new>", Commands.Specifier);
+                            return;
+                        }
+
+                        var cls1 = classes.GetClass(args.Parameters[1]);
+                        if (cls1 == null) {
+                            tplr.SendErrorMessage("Class {0} doesn't exist.", args.Parameters[1]);
+                            return;
+                        }
+                        var cls2 = classes.GetClass(args.Parameters[2]);
+                        if (cls2 != null) {
+                            tplr.SendErrorMessage("Class {0} already exists.", cls2.Name);
+                            return;
+                        }
+
+                        cls1.ID = -1;
+                        cls1.Name = args.Parameters[2];
+                        classes.SaveClass(cls1);
+                        tplr.SendSuccessMessage("Cloned {0} into {1}.", cls1.Name, args.Parameters[2]);
+
+                        foreach (var tp in TShock.Players) {
+                            if (tp != null && displayExcept[tp.Index])
+                                displayMessage(tp, generateClassList(tp));
+                        }
+
+                    }
+                    return;
+                #endregion
+
+                #region /class check <player> <class>
+                case "check": {
+
+                        if (!tplr.HasPermission(CTFPermissions.ClassEdit)) {
+                            tplr.SendErrorMessage("You don't have access to this command.");
+                            return;
+                        }
+
+                        if (args.Parameters.Count != 3) {
+                            tplr.SendErrorMessage("Usage: {0}class check <player> <class>", Commands.Specifier);
+                            return;
+                        }
+
+                        var name = args.Parameters[1];
+                        TSPlayer ttplr;
+                        User tusr;
+                        CTFUser cusr;
+                        if (!findUser(name, out ttplr, out tusr, out cusr)) {
+                            tplr.SendErrorMessage("User {0} doesn't exist.", name);
+                            return;
+                        }
+                        name = tusr.Name;
+
+                        var clsName = args.Parameters[2];
+                        var cls = classes.GetClass(clsName);
+                        if (cls == null) {
+                            tplr.SendErrorMessage("Class {0} doesn't exist.", clsName);
+                            return;
+                        }
+                        clsName = cls.Name;
+
+                        if (cusr.HasClass(cls.ID))
+                            tplr.SendInfoMessage("{0} can use class {1}.", name, clsName);
+                        else
+                            tplr.SendInfoMessage("{0} can't use class {1}.", name, clsName);
+
+                    }
+                    break;
+                #endregion
+
+                #region /class allow <player> <class>
+                case "allow": {
+
+                        if (!tplr.HasPermission(CTFPermissions.ClassEdit)) {
+                            tplr.SendErrorMessage("You don't have access to this command.");
+                            return;
+                        }
+
+                        if (args.Parameters.Count != 3) {
+                            tplr.SendErrorMessage("Usage: {0}class allow <player> <class>", Commands.Specifier);
+                            return;
+                        }
+
+                        var name = args.Parameters[1];
+                        TSPlayer ttplr;
+                        User tusr;
+                        CTFUser cusr;
+                        if (!findUser(name, out ttplr, out tusr, out cusr)) {
+                            tplr.SendErrorMessage("User {0} doesn't exist.", name);
+                            return;
+                        }
+                        name = tusr.Name;
+
+                        var clsName = args.Parameters[2];
+                        var cls = classes.GetClass(clsName);
+                        if (cls == null) {
+                            tplr.SendErrorMessage("Class {0} doesn't exist.", clsName);
+                            return;
+                        }
+                        clsName = cls.Name;
+
+                        cusr.AddClass(cls.ID);
+                        saveUser(cusr);
+                        tplr.SendSuccessMessage("Allowed {0} to use {1}.", name, clsName);
+
+                    }
+                    break;
+                #endregion
+
+                #region /class disallow <player> <class>
+                case "disallow": {
+
+                        if (!tplr.HasPermission(CTFPermissions.ClassEdit)) {
+                            tplr.SendErrorMessage("You don't have access to this command.");
+                            return;
+                        }
+
+                        if (args.Parameters.Count != 3) {
+                            tplr.SendErrorMessage("Usage: {0}class disallow <player> <class>", Commands.Specifier);
+                            return;
+                        }
+
+                        var name = args.Parameters[1];
+                        TSPlayer ttplr = null;
+                        User tusr = null;
+                        CTFUser cusr = null;
+                        if (name != "*") {
+                            if (!findUser(name, out ttplr, out tusr, out cusr)) {
+                                tplr.SendErrorMessage("User {0} doesn't exist.", name);
+                                return;
+                            }
+                            name = tusr.Name;
+                        }
+
+                        var clsName = args.Parameters[2];
+                        var cls = classes.GetClass(clsName);
+                        if (cls == null) {
+                            tplr.SendErrorMessage("Class {0} doesn't exist.", clsName);
+                            return;
+                        }
+                        clsName = cls.Name;
+
+                        if (name == "*") {
+
+                            var usrs = users.GetUsers();
+                            foreach (var usr in usrs) {
+                                if (usr.HasClass(cls.ID)) {
+                                    usr.RemoveClass(cls.ID);
+                                    saveUser(usr);
+                                }
+                            }
+                            tplr.SendSuccessMessage("Disallowed everybody from using {0}.", clsName);
+
+                        } else {
+
+                            cusr.RemoveClass(cls.ID);
+                            saveUser(cusr);
+                            tplr.SendSuccessMessage("Disallowed {0} from using {1}.", name, clsName);
+
+                        }
+
+                    }
+                    break;
+                #endregion
+
+                #region /class refund <name> <amount>
+                case "refund": {
+
+                        if (!tplr.HasPermission(CTFPermissions.ClassEdit)) {
+                            tplr.SendErrorMessage("You don't have access to this command.");
+                            return;
+                        }
+                        if (args.Parameters.Count != 3) {
+                            tplr.SendErrorMessage("Usage: {0}class refund <name> <amount>", Commands.Specifier);
+                            return;
+                        }
+
+                        int amount;
+                        if (!int.TryParse(args.Parameters[2], out amount)) {
+                            tplr.SendErrorMessage("Invalid amount.");
+                            return;
+                        }
+
+                        var clsName = args.Parameters[1];
+                        var cls = classes.GetClass(clsName);
+                        if (cls == null) {
+                            tplr.SendErrorMessage("Class {0} doesn't exist.", clsName);
+                            return;
+                        }
+                        clsName = cls.Name;
+
+                        var usrs = users.GetUsers();
+                        int count = 0;
+                        foreach (var usr in usrs) {
+                            if (usr.HasClass(cls.ID)) {
+                                ++count;
+                                usr.Coins += amount;
+                                saveUser(usr);
+                            }
+                        }
+
+                        tplr.SendSuccessMessage("Gave {0} to {1} players.",
+                            CTFUtils.Pluralize(amount, singular, plural), count);
 
                     }
                     break;
@@ -1184,7 +1411,14 @@ namespace CGGCTF
                 case "price":
                 case "hidden":
                 case "visible":
-                case "sell": {
+                case "lock":
+                case "sell":
+                case "clone":
+                case "copy":
+                case "check":
+                case "allow":
+                case "disallow":
+                case "refund": {
                         tplr.SendInfoMessage("To edit package, use {0}class edit *<name>.",
                             Commands.Specifier);
                     }
@@ -1876,6 +2110,8 @@ namespace CGGCTF
 
         void saveUser(CTFUser cusr)
         {
+            if (revID.ContainsKey(cusr.ID))
+                loadedUser[revID[cusr.ID]] = cusr;
             users.SaveUser(cusr);
         }
 

@@ -85,6 +85,31 @@ namespace CGGCTF
             return null;
         }
 
+        public List<CTFUser> GetUsers()
+        {
+            var list = new List<CTFUser>();
+            try {
+                using (var reader = db.QueryReader("SELECT * FROM ctfusers")) {
+                    while (reader.Read()) {
+                        list.Add(new CTFUser() {
+                            ID = reader.Get<int>("ID"),
+                            Coins = reader.Get<int>("Coins"),
+                            Kills = reader.Get<int>("Kills"),
+                            Deaths = reader.Get<int>("Deaths"),
+                            Assists = reader.Get<int>("Assists"),
+                            Wins = reader.Get<int>("Wins"),
+                            Loses = reader.Get<int>("Loses"),
+                            Draws = reader.Get<int>("Draws"),
+                            Classes = ParseClasses(reader.Get<string>("Classes"))
+                        });
+                    }
+                }
+            } catch (Exception ex) {
+                TShock.Log.Error(ex.ToString());
+            }
+            return list;
+        }
+
         public bool SaveUser(CTFUser user)
         {
             try {

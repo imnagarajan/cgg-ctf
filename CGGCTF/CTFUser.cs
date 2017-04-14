@@ -30,5 +30,11 @@ namespace CGGCTF
             if (!HasClass(cls))
                 Classes.Add(cls);
         }
+
+        public void RemoveClass(int cls)
+        {
+            if (HasClass(cls))
+                Classes.Remove(cls);
+        }
     }
 }
