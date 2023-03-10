@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,7 +16,7 @@ using TShockAPI.Hooks;
 
 namespace CGGCTF
 {
-    [ApiVersion(2, 0)]
+    [ApiVersion(2, 1)]
     public class CTFPlugin : TerrariaPlugin
     {
         public override string Name { get { return "CGGCTF"; } }
